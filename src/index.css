@@ -348,16 +348,19 @@ button {
   transition: margin 0.2s ease, width 0.2s ease;
 }
 
+/* GLASS SIDEBAR ----------------------------------- */
 .aegis-sidebar {
   position: relative;
   width: 260px;
-  background: radial-gradient(circle at top left, #02051b, #000814);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(10, 15, 40, 0.45); /* translucent navy glass */
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   padding: 20px 16px;
-  transition: width 0.18s ease;
+  transition: width 0.2s ease, background 0.2s ease;
 }
 
 .aegis-sidebar::after {
@@ -473,15 +476,9 @@ button {
   position: relative;
 }
 
+/* remove extra outside bar on active nav item */
 .aegis-nav-item--active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  border-radius: 6px;
-  background: #a78bfa;
+  content: none;
 }
 
 .aegis-nav-active-bar {
@@ -614,11 +611,18 @@ button {
   gap: 20px;
 }
 
+/* GLASS TOP HEADER BAR ----------------------------------- */
 .aegis-dash-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  background: rgba(10, 15, 40, 0.30);
+  border-radius: 14px;
+  padding: 20px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .aegis-dash-title {
@@ -685,10 +689,8 @@ button {
 }
 
 .aegis-stat-card {
-  background: #040b22;
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
   min-height: 140px;
   display: flex;
   flex-direction: column;
@@ -784,27 +786,31 @@ button {
 }
 
 .aegis-card {
-  background: #040b22;
   border-radius: 20px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
   padding: 18px 20px 20px;
   position: relative;
   overflow: hidden;
 }
 
+/* GLASS CARDS ----------------------------------- */
 .aegis-card,
 .aegis-stat-card,
 .aegis-alert-card {
-  transition: box-shadow 0.15s ease, transform 0.12s ease,
-    border-color 0.15s ease;
+  background: rgba(10, 15, 40, 0.35);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
 }
 
+/* glass hover boost */
 .aegis-card:hover,
 .aegis-stat-card:hover,
 .aegis-alert-card:hover {
-  box-shadow: 0 14px 40px rgba(2, 6, 23, 0.9);
+  background: rgba(10, 15, 40, 0.45);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   transform: translateY(-2px);
-  border-color: rgba(148, 163, 184, 0.4);
 }
 
 .aegis-card-header {
@@ -929,25 +935,34 @@ button {
   color: #fb7185;
 }
 
+/* SEVERITY PILLS (reuse across app) */
 .sev {
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 2px 10px;
   border-radius: 999px;
   font-size: 11px;
-}
-
-.sev-low {
-  background: rgba(22, 163, 74, 0.2);
-  color: #4ade80;
-}
-
-.sev-medium {
-  background: rgba(234, 179, 8, 0.2);
-  color: #facc15;
+  font-weight: 600;
 }
 
 .sev-high {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fb7185;
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.7);
+}
+
+.sev-medium {
+  background: rgba(234, 179, 8, 0.18);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.7);
+}
+
+.sev-low {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+  border: 1px solid rgba(34, 197, 94, 0.7);
 }
 
 .aegis-advisory-card {
@@ -1057,20 +1072,20 @@ button {
 }
 
 .aegis-alert-card--high {
-  background-color: #3a0f0f;
+  background: rgba(58, 15, 15, 0.5);
   border-color: #ee4444;
   box-shadow: 0 0 0 1px #ee8888, 0 0 14px rgba(238, 68, 68, 0.4);
 }
 
 .aegis-alert-card--medium {
-  background-color: #2d1f06;
+  background: rgba(45, 31, 6, 0.5);
   border-color: #fbbf24;
   box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.7),
     0 0 14px rgba(250, 204, 21, 0.35);
 }
 
 .aegis-alert-card--low {
-  background-color: #062812;
+  background: rgba(6, 40, 18, 0.5);
   border-color: #22c55e;
   box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.7),
     0 0 14px rgba(34, 197, 94, 0.35);
@@ -1187,6 +1202,7 @@ button {
 .ids-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 20px;
   gap: 16px;
 }
@@ -1239,9 +1255,48 @@ button {
   color: white;
 }
 
+/* HEADER RIGHT SIDE */
+.ids-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ids-status-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  font-size: 12px;
+  color: #bbf7d0;
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.ids-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  margin-right: 6px;
+}
+
+/* GRID LAYOUT */
 .ids-live-grid {
   display: grid;
-  grid-template-columns: 2.4fr 1.2fr;
+  grid-template-columns: 2.1fr 1.1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.ids-left-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ids-right-stack {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
@@ -1293,56 +1348,146 @@ button {
   text-align: left;
 }
 
-.ids-right {
+/* TABLE ROW INTERACTION */
+.ids-table tbody tr {
+  cursor: pointer;
+  transition: background 0.12s ease, box-shadow 0.12s ease,
+    transform 0.12s ease;
+}
+
+.ids-row:hover {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.ids-row--selected {
+  background: radial-gradient(circle at top left, #111827, #020617);
+  box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.6),
+    0 0 16px rgba(129, 140, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+/* SELECTED ALERT SUMMARY CARD */
+.ids-selected-summary {
+  padding: 16px 18px;
+}
+
+.ids-selected-header {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ids-selected-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.ids-selected-title {
+  font-size: 15px;
+  margin: 2px 0 4px;
+}
+
+.ids-selected-meta {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.ids-selected-pill {
+  align-self: flex-start;
 }
 
 .ids-selected-alert .aegis-alert-card {
   box-shadow: none;
 }
 
+/* CHART CARD */
+.ids-chart-card .aegis-chart-placeholder span {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
 .ids-details-card h2 {
   margin: 0 0 14px;
 }
 
+/* DETAILS */
 .ids-details-section {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .ids-details-section h3 {
-  margin-bottom: 6px;
   font-size: 14px;
+  margin-bottom: 6px;
 }
 
 .ids-details-section ul {
-  padding-left: 16px;
+  padding-left: 18px;
   color: #cbd5e1;
 }
 
-.ids-advisory-title {
-  margin-bottom: 6px;
+.ids-details-text {
+  font-size: 13px;
+  color: #e5e7eb;
+}
+
+/* ADVISORY CARD (IDS) */
+.ids-advisory-card {
+  border-left: 3px solid #f97316;
+  background: radial-gradient(circle at top left, #0b1029, #020617);
+}
+
+.ids-advisory-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ids-advisory-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #f97316, #c2410c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 16px;
+}
+
+.ids-advisory-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.ids-advisory-subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #e5e7eb;
 }
 
 .ids-advisory-text {
   font-size: 13px;
-  color: #d1d5db;
-}
-
-.ids-advisory-text-bold {
-  font-size: 13px;
   color: #e5e7eb;
-  font-weight: 500;
-  margin-top: 8px;
+  margin: 6px 0 14px;
 }
 
-.ids-advisory-card {
-  border-left: 3px solid #f43f5e;
+.ids-advisory-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  font-size: 13px;
+  color: white;
+  cursor: pointer;
+  align-self: flex-start;
 }
 
+/* PLACEHOLDER CARD */
 .ids-placeholder {
+  margin-top: 16px;
   min-height: 200px;
   display: flex;
   flex-direction: column;
