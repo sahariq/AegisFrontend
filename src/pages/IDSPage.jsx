@@ -156,22 +156,17 @@ function IDSPage() {
     <div className="aegis-page">
       {/* Header */}
       <header className="ids-header-new">
-        <div className="ids-header-left">
-          <div className="ids-header-icon-wrap">
-            <Shield className="ids-header-icon" size={24} />
-          </div>
-          <div className="ids-header-text">
-            <h1 className="aegis-dash-title">
-              Aegis IDS — Real-Time Threat Detection
-            </h1>
-            <p className="aegis-dash-subtitle">
-              Live network threat intelligence with explainability and analytics
-              for SME networks.
-            </p>
-            <div className="ids-last-updated">
-              <span className="ids-status-dot ids-status-dot--pulse" />
-              <span>Updated 32s ago</span>
-            </div>
+        <div>
+          <h1 className="aegis-dash-title">
+            Aegis IDS — Real-Time Threat Detection
+          </h1>
+          <p className="aegis-dash-subtitle">
+            Live network threat intelligence with explainability and analytics
+            for SME networks.
+          </p>
+          <div className="ids-last-updated">
+            <span className="ids-status-dot ids-status-dot--pulse" />
+            <span>Updated 32s ago</span>
           </div>
         </div>
         <div className="ids-header-right">

@@ -15,6 +15,7 @@
   border-color: rgba(96, 165, 250, 0.7);
   color: #ffffff;
 }
+
 :root {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   line-height: 1.5;
@@ -354,7 +355,8 @@ button {
   width: 260px;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  background: rgba(10, 15, 40, 0.45); /* translucent navy glass */
+  background: rgba(10, 15, 40, 0.45);
+  /* translucent navy glass */
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
   display: flex;
@@ -380,29 +382,72 @@ button {
   padding: 20px 12px;
 }
 
+/* Hovering the shell expands the sidebar */
+.aegis-shell--collapsed .aegis-sidebar:hover {
+  width: 260px;
+  padding: 20px 16px;
+}
+
+/* Show labels again when sidebar hovered */
+.aegis-shell--collapsed .aegis-sidebar:hover .aegis-nav-label {
+  opacity: 1;
+  width: auto;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+/* Show search bar + user meta when sidebar expanded */
+.aegis-shell--collapsed .aegis-sidebar:hover .aegis-sidebar-search {
+  display: block;
+}
+
+.aegis-shell--collapsed .aegis-sidebar:hover .aegis-user-meta {
+  display: flex;
+}
+
+/* Slightly recenter nav items when sidebar expanded */
+.aegis-shell--collapsed .aegis-sidebar:hover .aegis-nav-item {
+  margin: 0 4px;
+  border-radius: 14px;
+}
+
+
+/* Top of sidebar: center logo on same axis as icons */
 .aegis-sidebar-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   margin-bottom: 18px;
+  gap: 8px;
 }
+
+.aegis-shell--collapsed .aegis-nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  margin: 0 6px;
+  border-radius: 999px;
+}
+
 
 .aegis-sidebar-logo-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  flex: 0;
 }
 
+/* Default (NOT collapsed) – make it bigger */
 .aegis-sidebar-logo {
-  height: 64px;
+  height: 158px;
+  /* 80% increase from original 88px */
   width: auto;
-  transition: all 0.2s ease;
+  transition: height 0.2s ease, opacity 0.2s ease;
 }
 
-.aegis-sidebar-logo--collapsed {
-  height: 36px;
-  opacity: 0.9;
+/* Collapsed – smaller logo only when shell is collapsed */
+.aegis-shell--collapsed .aegis-sidebar-logo {
+  height: 40px;
+  opacity: 0.95;
 }
 
 .aegis-sidebar-toggle {
@@ -414,6 +459,7 @@ button {
   height: 26px;
   font-size: 14px;
   cursor: pointer;
+  display: none;
 }
 
 .aegis-sidebar-search {
@@ -497,40 +543,7 @@ button {
   opacity: 1;
 }
 
-/* Tooltips for collapsed nav */
-.aegis-shell--collapsed .aegis-nav-item[title] {
-  position: relative;
-}
-
-.aegis-shell--collapsed .aegis-nav-item:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: 70px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #0f172a;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  white-space: nowrap;
-  color: #fff;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-  opacity: 1;
-  z-index: 1000;
-}
-
-.aegis-shell--collapsed .aegis-nav-item:hover::before {
-  content: "";
-  position: absolute;
-  left: 60px;
-  top: 50%;
-  transform: translateY(-50%) rotate(45deg);
-  width: 6px;
-  height: 6px;
-  background: #0f172a;
-  border-radius: 1px;
-  z-index: 999;
-}
+/* (tooltip-on-collapse removed; labels now visible when expanded) */
 
 .aegis-nav-icon {
   font-size: 18px;
@@ -553,9 +566,37 @@ button {
   overflow: hidden;
 }
 
+/* COLLAPSED SIDEBAR – give icons breathing room & inset glow */
 .aegis-shell--collapsed .aegis-nav-item {
-  justify-content: center;
-  padding: 12px 12px;
+  justify-content: flex-start;
+  padding: 10px 14px 10px 12px;
+  /* extra left padding pushes icon right */
+  margin: 0 6px;
+  /* internal margin so glow doesn't clip sidebar edge */
+  border-radius: 200px;
+  /* pill shape around icon */
+}
+
+.aegis-shell--collapsed .aegis-nav-icon {
+  width: 32px;
+  /* keep icon hit area wide */
+}
+
+.aegis-shell--collapsed .aegis-nav-item--active {
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.55);
+}
+
+.aegis-shell--collapsed .aegis-nav-item:hover {
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 14px rgba(129, 140, 248, 0.35);
+}
+
+/* In collapsed mode, inset the active indicator bar closer to the edge
+   so there's a comfortable gap between the bar and the icon */
+.aegis-shell--collapsed .aegis-nav-active-bar {
+  left: 2px;
+  top: 9px;
+  bottom: 9px;
 }
 
 .aegis-sidebar-footer {
@@ -1550,23 +1591,19 @@ button {
 }
 
 .cursor-glow--idle {
-  background: radial-gradient(
-    circle,
-    rgba(96, 165, 250, 0.35),
-    rgba(37, 99, 235, 0.12),
-    rgba(0, 0, 0, 0)
-  );
+  background: radial-gradient(circle,
+      rgba(96, 165, 250, 0.35),
+      rgba(37, 99, 235, 0.12),
+      rgba(0, 0, 0, 0));
   box-shadow: 0 0 18px rgba(37, 99, 235, 0.35);
   opacity: 0.55;
 }
 
 .cursor-glow--action {
-  background: radial-gradient(
-    circle,
-    rgba(129, 140, 248, 0.75),
-    rgba(168, 85, 247, 0.45),
-    rgba(0, 0, 0, 0)
-  );
+  background: radial-gradient(circle,
+      rgba(129, 140, 248, 0.75),
+      rgba(168, 85, 247, 0.45),
+      rgba(0, 0, 0, 0));
   box-shadow: 0 0 26px rgba(168, 85, 247, 0.8);
   width: 32px;
   height: 32px;
@@ -1574,12 +1611,10 @@ button {
 }
 
 .cursor-glow--danger {
-  background: radial-gradient(
-    circle,
-    rgba(248, 113, 113, 0.85),
-    rgba(238, 68, 68, 0.6),
-    rgba(0, 0, 0, 0)
-  );
+  background: radial-gradient(circle,
+      rgba(248, 113, 113, 0.85),
+      rgba(238, 68, 68, 0.6),
+      rgba(0, 0, 0, 0));
   box-shadow: 0 0 30px rgba(238, 68, 68, 0.9);
   width: 34px;
   height: 34px;
@@ -1595,10 +1630,12 @@ button {
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
+
   70% {
     transform: translate(-50%, -50%) scale(1.5);
     opacity: 0.4;
   }
+
   100% {
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
@@ -1995,6 +2032,19 @@ button {
   }
 }
 
+.ids-header-new {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  background: rgba(10, 15, 40, 0.30);
+  border-radius: 14px;
+  padding: 20px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .ids-header-left {
   display: flex;
   align-items: flex-start;
@@ -2037,10 +2087,13 @@ button {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.6;
     transform: scale(1);
   }
+
   50% {
     opacity: 0;
     transform: scale(1.5);
@@ -2126,7 +2179,7 @@ button {
   color: #cbd5e1;
 }
 
-.ids-arch-content > p {
+.ids-arch-content>p {
   margin-bottom: 12px;
 }
 
@@ -2396,7 +2449,7 @@ button {
   padding: 0;
 }
 
-.ids-explain-content > p {
+.ids-explain-content>p {
   font-size: 13px;
   color: #cbd5e1;
   margin-bottom: 8px;

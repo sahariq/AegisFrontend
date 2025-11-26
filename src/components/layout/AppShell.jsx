@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -19,33 +19,20 @@ const NAV_ITEMS = [
 ];
 
 function AppShell({ children }) {
-  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   return (
-    <div className={`aegis-shell${collapsed ? " aegis-shell--collapsed" : ""}`}>
+    <div className="aegis-shell aegis-shell--collapsed">
       <aside className="aegis-sidebar">
         <div className="aegis-sidebar-top">
           <div className="aegis-sidebar-logo-wrap">
             <img
               src={aegisLogo}
               alt="AEGIS logo"
-              className={
-                collapsed
-                  ? "aegis-sidebar-logo aegis-sidebar-logo--collapsed"
-                  : "aegis-sidebar-logo"
-              }
+              className="aegis-sidebar-logo"
             />
           </div>
-          <button
-            type="button"
-            className="aegis-sidebar-toggle cursor-hotspot-action"
-            onClick={() => setCollapsed((v) => !v)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? "›" : "‹"}
-          </button>
         </div>
 
         <div className="aegis-sidebar-search">
@@ -62,7 +49,6 @@ function AppShell({ children }) {
                 type="button"
                 className={`aegis-nav-item${isActive ? " aegis-nav-item--active" : ""}`}
                 onClick={() => navigate(item.path)}
-                title={item.label}
                 aria-current={isActive ? "page" : undefined}
               >
                 <span className="aegis-nav-active-bar" aria-hidden="true" />
