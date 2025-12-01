@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import IDSPage from "./pages/IDSPage.jsx";
 import AppShell from "./components/layout/AppShell.jsx";
+import HealthCheck from "./components/HealthCheck.tsx";
 
 function useCursorGlow() {
   useEffect(() => {
@@ -87,26 +88,29 @@ function App() {
   useCursorGlow();
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <AppShell>
-            <DashboardPage />
-          </AppShell>
-        }
-      />
-      <Route
-        path="/ids"
-        element={
-          <AppShell>
-            <IDSPage />
-          </AppShell>
-        }
-      />
-    </Routes>
+    <>
+      <HealthCheck />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <AppShell>
+              <DashboardPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/ids"
+          element={
+            <AppShell>
+              <IDSPage />
+            </AppShell>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 
