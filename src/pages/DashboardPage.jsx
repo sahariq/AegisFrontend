@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "../index.css";
 import {
   Bell,
@@ -10,6 +10,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import RecentAlertCard from "../components/alerts/RecentAlertCard.jsx";
+import { getMetricsOverview, fetchAlerts } from "../api/aegisClient.ts";
 
 function StatCard({ label, value, delta, trend = "neutral", Icon }) {
   return (
@@ -29,6 +30,36 @@ function StatCard({ label, value, delta, trend = "neutral", Icon }) {
 }
 
 function DashboardPage() {
+  const [metrics, setMetrics] = useState(null);
+  const [recentAlerts, setRecentAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch metrics and recent alerts in parallel
+        const [metricsData, alertsData] = await Promise.all([
+          getMetricsOverview(),
+          fetchAlerts({ page: 1, page_size: 4, status: 'new' })
+        ]);
+
+        setMetrics(metricsData);
+        setRecentAlerts(alertsData.alerts);
+      } catch (err) {
+        setError(err.message);
+        console.error('Failed to load dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadDashboardData();
+  }, []);
+
   return (
     <div className="aegis-page">
       <header className="aegis-dash-header">
@@ -41,7 +72,7 @@ function DashboardPage() {
         <div className="aegis-dash-header-actions">
           <div className="aegis-env-pill">
             <span className="aegis-env-dot" />
-            <span>Environment: Production · IDS Healthy</span>
+            <span>Environment: Production · IDS {loading ? 'Loading...' : error ? 'Error' : 'Healthy'}</span>
           </div>
           <button className="aegis-header-icon-btn" aria-label="Notifications">
             <Bell size={18} aria-hidden="true" />
@@ -52,11 +83,41 @@ function DashboardPage() {
         </div>
       </header>
 
+      {error && (
+        <div style={{ padding: '1rem', background: '#fee', color: '#c00', borderRadius: '8px', margin: '1rem 0' }}>
+          Error loading dashboard: {error}
+        </div>
+      )}
+
       <section className="aegis-dash-top-row">
-        <StatCard label="Active Alerts" value="37" delta="+12.4%" trend="up" Icon={Shield} />
-        <StatCard label="Threats Blocked" value="524" delta="+17.9%" trend="up" Icon={Activity} />
-        <StatCard label="Avg. Response Time" value="2.3s" delta="-12.4%" trend="down" Icon={Clock3} />
-        <StatCard label="Advisor Suggestions" value="19" delta="+5.7%" trend="up" Icon={Lightbulb} />
+        <StatCard
+          label="Active Alerts"
+          value={loading ? "..." : metrics?.total_alerts || "0"}
+          delta="+12.4%"
+          trend="up"
+          Icon={Shield}
+        />
+        <StatCard
+          label="Total Detections"
+          value={loading ? "..." : metrics?.total_detections || "0"}
+          delta="+17.9%"
+          trend="up"
+          Icon={Activity}
+        />
+        <StatCard
+          label="Avg. Response Time"
+          value="2.3s"
+          delta="-12.4%"
+          trend="down"
+          Icon={Clock3}
+        />
+        <StatCard
+          label="Detection Rate"
+          value={loading ? "..." : metrics?.detection_rate ? `${(metrics.detection_rate * 100).toFixed(1)}%` : "N/A"}
+          delta="+5.7%"
+          trend="up"
+          Icon={Lightbulb}
+        />
       </section>
 
       <section className="aegis-dash-main-grid">
@@ -195,34 +256,22 @@ function DashboardPage() {
               </button>
             </div>
             <div className="aegis-alerts-list">
-              <RecentAlertCard
-                id="OB 109"
-                title="DDoS Attempt"
-                severity="High"
-                time="Detected 2 min ago"
-                source="Edge Firewall"
-              />
-              <RecentAlertCard
-                id="OB 130"
-                title="DDoS Attempt"
-                severity="High"
-                time="Detected 3 min ago"
-                source="Reverse Proxy"
-              />
-              <RecentAlertCard
-                id="OB 110"
-                title="DNS Tunnel"
-                severity="Medium"
-                time="Detected 4 min ago"
-                source="Branch Office"
-              />
-              <RecentAlertCard
-                id="OB 121"
-                title="Ping Sweep"
-                severity="Low"
-                time="Detected 5 min ago"
-                source="Internal Subnet"
-              />
+              {loading ? (
+                <p style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>Loading alerts...</p>
+              ) : recentAlerts.length > 0 ? (
+                recentAlerts.map((alert) => (
+                  <RecentAlertCard
+                    key={alert.id}
+                    id={alert.id}
+                    title={alert.attack_type || 'Unknown Attack'}
+                    severity={alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
+                    time={`Detected ${new Date(alert.timestamp).toLocaleString()}`}
+                    source={alert.source_ip || 'Unknown'}
+                  />
+                ))
+              ) : (
+                <p style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>No recent alerts</p>
+              )}
             </div>
           </div>
         </div>

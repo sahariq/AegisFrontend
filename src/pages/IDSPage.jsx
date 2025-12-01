@@ -1,6 +1,6 @@
 // src/pages/IDSPage.jsx
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Shield,
   RadioTower,
@@ -21,8 +21,14 @@ import {
 } from "lucide-react";
 
 import "../index.css";
+import {
+  getMetricsOverview,
+  getSystemStatus,
+  fetchAlerts,
+  getExplanation
+} from "../api/aegisClient.ts";
 
-// --- Demo data (replace with real API later) ----------------------
+// --- Demo data (fallback for when API is unavailable) ----------------------
 
 const mockAlerts = [
   {
@@ -120,37 +126,160 @@ const SeverityPill = ({ severity, withIcon = true, className = "" }) => {
 function IDSPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [selectedAlertId, setSelectedAlertId] = useState(
-    mockAlerts[0]?.id ?? ""
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
 
-  const totalAlerts = mockAlerts.length;
-  const highCount = mockAlerts.filter((a) => a.severity === "high").length;
-  const mediumCount = mockAlerts.filter((a) => a.severity === "medium").length;
-  const lowCount = mockAlerts.filter((a) => a.severity === "low").length;
+  // API state
+  const [metrics, setMetrics] = useState(null);
+  const [systemStatus, setSystemStatus] = useState(null);
+  const [alerts, setAlerts] = useState([]);
+  const [alertsPagination, setAlertsPagination] = useState(null);
+  const [selectedAlertId, setSelectedAlertId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Explainability state
+  const [detectionIdInput, setDetectionIdInput] = useState("");
+  const [explanation, setExplanation] = useState(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
+  const [explanationError, setExplanationError] = useState(null);
+
+  // Load Overview data
+  useEffect(() => {
+    if (activeTab !== "overview" && activeTab !== "analytics") return;
+
+    async function loadOverviewData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [metricsData, statusData] = await Promise.all([
+          getMetricsOverview(),
+          getSystemStatus()
+        ]);
+
+        setMetrics(metricsData);
+        setSystemStatus(statusData);
+      } catch (err) {
+        setError(err.message);
+        console.error('Failed to load overview data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOverviewData();
+  }, [activeTab]);
+
+  // Load Live Alerts data
+  useEffect(() => {
+    if (activeTab !== "live-alerts") return;
+
+    async function loadAlerts() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetchAlerts({
+          page: 1,
+          page_size: 20,
+          ...(severityFilter !== "all" && { severity: severityFilter })
+        });
+
+        setAlerts(response.alerts);
+        setAlertsPagination(response.meta);
+        if (response.alerts.length > 0 && !selectedAlertId) {
+          setSelectedAlertId(response.alerts[0].id);
+        }
+      } catch (err) {
+        setError(err.message);
+        console.error('Failed to load alerts:', err);
+        // Fallback to mock data
+        setAlerts(mockAlerts);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadAlerts();
+  }, [activeTab, severityFilter]);
+
+  // Polling for Live Alerts
+  useEffect(() => {
+    if (activeTab !== "live-alerts" || !autoRefresh) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetchAlerts({
+          page: 1,
+          page_size: 20,
+          ...(severityFilter !== "all" && { severity: severityFilter })
+        });
+
+        setAlerts(response.alerts);
+        setAlertsPagination(response.meta);
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeTab, autoRefresh, severityFilter]);
+
+  // Handle explanation lookup
+  async function handleGetExplanation() {
+    if (!detectionIdInput.trim()) {
+      setExplanationError("Please enter a detection ID");
+      return;
+    }
+
+    try {
+      setExplanationLoading(true);
+      setExplanationError(null);
+
+      const result = await getExplanation(detectionIdInput.trim());
+      setExplanation(result);
+    } catch (err) {
+      if (err.message.includes("EXPLANATION_NOT_AVAILABLE")) {
+        setExplanationError("Explanation not yet available for this detection");
+      } else if (err.message.includes("DETECTION_NOT_FOUND")) {
+        setExplanationError("Detection ID not found");
+      } else {
+        setExplanationError(err.message);
+      }
+      setExplanation(null);
+    } finally {
+      setExplanationLoading(false);
+    }
+  }
+
+  const totalAlerts = metrics?.total_alerts || alerts.length || mockAlerts.length;
+  const highCount = metrics?.severity_counts?.high || alerts.filter((a) => a.severity === "high").length;
+  const mediumCount = metrics?.severity_counts?.medium || alerts.filter((a) => a.severity === "medium").length;
+  const lowCount = metrics?.severity_counts?.low || alerts.filter((a) => a.severity === "low").length;
 
   const selectedAlert = useMemo(
-    () => mockAlerts.find((a) => a.id === selectedAlertId) ?? mockAlerts[0],
-    [selectedAlertId]
+    () => alerts.find((a) => a.id === selectedAlertId) || alerts[0] || mockAlerts[0],
+    [selectedAlertId, alerts]
   );
 
   const filteredAlerts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    return mockAlerts.filter((alert) => {
+    const alertsToFilter = alerts.length > 0 ? alerts : mockAlerts;
+
+    return alertsToFilter.filter((alert) => {
       const matchesSeverity =
         severityFilter === "all" || alert.severity === severityFilter;
       const matchesSearch =
         term.length === 0 ||
         alert.id.toLowerCase().includes(term) ||
-        alert.srcIp.toLowerCase().includes(term) ||
-        alert.destIp.toLowerCase().includes(term) ||
-        alert.label.toLowerCase().includes(term) ||
-        alert.type.toLowerCase().includes(term);
+        (alert.source_ip || alert.srcIp || "").toLowerCase().includes(term) ||
+        (alert.destination_ip || alert.destIp || "").toLowerCase().includes(term) ||
+        (alert.attack_type || alert.label || "").toLowerCase().includes(term) ||
+        (alert.type || "").toLowerCase().includes(term);
       return matchesSeverity && matchesSearch;
     });
-  }, [searchTerm, severityFilter]);
+  }, [searchTerm, severityFilter, alerts]);
 
   return (
     <div className="aegis-page">
@@ -314,27 +443,30 @@ function IDSPage() {
                     <ChartPie size={16} />
                     Attack Type Distribution
                   </div>
-                  {[
-                    { label: "DDoS", value: 48, color: "ids-bar-fill--purple" },
-                    {
-                      label: "DNS Tunnel",
-                      value: 27,
-                      color: "ids-bar-fill--cyan",
-                    },
-                    { label: "Recon", value: 18, color: "ids-bar-fill--amber" },
-                    { label: "Other", value: 7, color: "ids-bar-fill--slate" },
-                  ].map((item) => (
-                    <div key={item.label} className="ids-bar-row">
-                      <span>{item.label}</span>
-                      <div className="ids-bar">
-                        <div
-                          className={`ids-bar-fill ${item.color}`}
-                          style={{ width: `${item.value}%` }}
-                        />
-                      </div>
-                      <span className="ids-bar-value">{item.value}%</span>
+                  {metrics?.attack_counts ? (
+                    Object.entries(metrics.attack_counts).map(([label, value], index) => {
+                      const total = Object.values(metrics.attack_counts).reduce((a, b) => a + b, 0);
+                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                      const colors = ["ids-bar-fill--purple", "ids-bar-fill--cyan", "ids-bar-fill--amber", "ids-bar-fill--slate"];
+
+                      return (
+                        <div key={label} className="ids-bar-row">
+                          <span style={{ textTransform: 'capitalize' }}>{label.replace(/_/g, ' ')}</span>
+                          <div className="ids-bar">
+                            <div
+                              className={`ids-bar-fill ${colors[index % colors.length]}`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="ids-bar-value">{percentage}%</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: '1rem', color: '#888', fontStyle: 'italic' }}>
+                      No attack data available
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {/* Severity Distribution */}
@@ -343,54 +475,44 @@ function IDSPage() {
                     <ShieldAlert size={16} />
                     Severity Distribution
                   </div>
-                  {[
-                    { label: "High", value: 38, color: "ids-bar-fill--red" },
-                    {
-                      label: "Medium",
-                      value: 42,
-                      color: "ids-bar-fill--amber",
-                    },
-                    {
-                      label: "Low",
-                      value: 20,
-                      color: "ids-bar-fill--green",
-                    },
-                  ].map((item) => (
-                    <div key={item.label} className="ids-bar-row">
-                      <span>{item.label}</span>
-                      <div className="ids-bar">
-                        <div
-                          className={`ids-bar-fill ${item.color}`}
-                          style={{ width: `${item.value}%` }}
-                        />
-                      </div>
-                      <span className="ids-bar-value">{item.value}%</span>
+                  {metrics?.severity_counts ? (
+                    Object.entries(metrics.severity_counts).map(([label, value]) => {
+                      const total = Object.values(metrics.severity_counts).reduce((a, b) => a + b, 0);
+                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                      let color = "ids-bar-fill--slate";
+                      if (label === "high") color = "ids-bar-fill--red";
+                      if (label === "medium") color = "ids-bar-fill--amber";
+                      if (label === "low") color = "ids-bar-fill--green";
+
+                      return (
+                        <div key={label} className="ids-bar-row">
+                          <span style={{ textTransform: 'capitalize' }}>{label}</span>
+                          <div className="ids-bar">
+                            <div
+                              className={`ids-bar-fill ${color}`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="ids-bar-value">{percentage}%</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: '1rem', color: '#888', fontStyle: 'italic' }}>
+                      No severity data available
                     </div>
-                  ))}
+                  )}
                 </div>
 
-                {/* Protocol Distribution */}
+                {/* Protocol Distribution - Placeholder as API doesn't provide this yet */}
                 <div className="ids-dist-section">
                   <div className="ids-dist-section-title">
                     <Activity size={16} />
                     Protocol Distribution
                   </div>
-                  {[
-                    { label: "TCP", value: 68, color: "ids-bar-fill--blue" },
-                    { label: "UDP", value: 22, color: "ids-bar-fill--purple" },
-                    { label: "ICMP", value: 10, color: "ids-bar-fill--slate" },
-                  ].map((item) => (
-                    <div key={item.label} className="ids-bar-row">
-                      <span>{item.label}</span>
-                      <div className="ids-bar">
-                        <div
-                          className={`ids-bar-fill ${item.color}`}
-                          style={{ width: `${item.value}%` }}
-                        />
-                      </div>
-                      <span className="ids-bar-value">{item.value}%</span>
-                    </div>
-                  ))}
+                  <div style={{ padding: '0.5rem 0', color: '#666', fontSize: '0.85rem' }}>
+                    Protocol statistics will be available in the next API update.
+                  </div>
                 </div>
               </div>
             </div>
@@ -409,9 +531,8 @@ function IDSPage() {
                 <div className="ids-live-left">
                   <div className="ids-live-status">
                     <span
-                      className={`ids-live-dot ${
-                        autoRefresh ? "ids-live-dot--on" : "ids-live-dot--off"
-                      }`}
+                      className={`ids-live-dot ${autoRefresh ? "ids-live-dot--on" : "ids-live-dot--off"
+                        }`}
                     />
                     {autoRefresh
                       ? "LIVE STREAMING — auto-refresh enabled."
@@ -422,9 +543,8 @@ function IDSPage() {
                     <button
                       type="button"
                       onClick={() => setAutoRefresh((prev) => !prev)}
-                      className={`ids-toggle ${
-                        autoRefresh ? "ids-toggle--on" : "ids-toggle--off"
-                      }`}
+                      className={`ids-toggle ${autoRefresh ? "ids-toggle--on" : "ids-toggle--off"
+                        }`}
                     >
                       <span className="ids-toggle-knob" />
                     </button>
@@ -505,13 +625,18 @@ function IDSPage() {
                   <tbody>
                     {filteredAlerts.map((alert) => {
                       const isSelected = alert.id === selectedAlert?.id;
+                      // Handle both API and mock data fields
+                      const srcIp = alert.source_ip || alert.srcIp || "—";
+                      const destIp = alert.destination_ip || alert.destIp || "—";
+                      const label = alert.attack_type || alert.label || "Unknown";
+                      const score = alert.confidence !== undefined ? alert.confidence : (alert.score !== undefined ? alert.score : 0);
+
                       return (
                         <tr
                           key={alert.id}
                           onClick={() => setSelectedAlertId(alert.id)}
-                          className={`ids-row ${
-                            isSelected ? "ids-row--selected" : ""
-                          }`}
+                          className={`ids-row ${isSelected ? "ids-row--selected" : ""
+                            }`}
                         >
                           <td>
                             <div className="ids-alert-id-cell">
@@ -521,12 +646,12 @@ function IDSPage() {
                               <span>{alert.id}</span>
                             </div>
                           </td>
-                          <td>{alert.timestamp}</td>
-                          <td>{alert.srcIp}</td>
-                          <td>{alert.destIp}</td>
-                          <td>{alert.protocol}</td>
-                          <td>{alert.label}</td>
-                          <td>{alert.score.toFixed(2)}</td>
+                          <td>{new Date(alert.timestamp).toLocaleTimeString()}</td>
+                          <td>{srcIp}</td>
+                          <td>{destIp}</td>
+                          <td>{alert.protocol || "TCP"}</td>
+                          <td>{label}</td>
+                          <td>{score.toFixed(2)}</td>
                           <td>
                             <SeverityPill severity={alert.severity} />
                           </td>
@@ -562,12 +687,12 @@ function IDSPage() {
                 <div>
                   <h2 className="ids-selected-title">
                     {selectedAlert
-                      ? `${selectedAlert.id} · ${selectedAlert.type}`
+                      ? `${selectedAlert.id} · ${selectedAlert.attack_type || selectedAlert.type || selectedAlert.label}`
                       : "No alert selected"}
                   </h2>
                   {selectedAlert && (
                     <p className="ids-selected-meta">
-                      {selectedAlert.timestamp} · {selectedAlert.sensor}
+                      {new Date(selectedAlert.timestamp).toLocaleString()} · {selectedAlert.sensor || "Network Sensor"}
                     </p>
                   )}
                 </div>
@@ -580,16 +705,16 @@ function IDSPage() {
                   <div className="ids-score-display">
                     <span className="ids-score-label">Detection score</span>
                     <span className="ids-score-value">
-                      {selectedAlert.score.toFixed(2)}
+                      {(selectedAlert.confidence !== undefined ? selectedAlert.confidence : (selectedAlert.score || 0)).toFixed(2)}
                     </span>
                   </div>
                   <div className="ids-tags">
-                    <span className="ids-tag">{selectedAlert.label}</span>
+                    <span className="ids-tag">{selectedAlert.attack_type || selectedAlert.label}</span>
                     <span className="ids-tag">
-                      {selectedAlert.protocol}
-                      {selectedAlert.destPort ? ` · ${selectedAlert.destPort}` : ""}
+                      {selectedAlert.protocol || "TCP"}
+                      {(selectedAlert.destPort || selectedAlert.destination_port) ? ` · ${selectedAlert.destPort || selectedAlert.destination_port}` : ""}
                     </span>
-                    <span className="ids-tag">{selectedAlert.sensor}</span>
+                    <span className="ids-tag">{selectedAlert.sensor || "Network Sensor"}</span>
                   </div>
                 </>
               )}
@@ -610,7 +735,7 @@ function IDSPage() {
                     </div>
                     <div>
                       <dt>Type</dt>
-                      <dd>{selectedAlert.type}</dd>
+                      <dd>{selectedAlert.attack_type || selectedAlert.type || selectedAlert.label}</dd>
                     </div>
                     <div>
                       <dt>Severity</dt>
@@ -618,7 +743,7 @@ function IDSPage() {
                     </div>
                     <div>
                       <dt>Detection score</dt>
-                      <dd>{selectedAlert.score.toFixed(2)}</dd>
+                      <dd>{(selectedAlert.confidence !== undefined ? selectedAlert.confidence : (selectedAlert.score || 0)).toFixed(2)}</dd>
                     </div>
                   </dl>
                 )}
@@ -633,27 +758,27 @@ function IDSPage() {
                   <dl className="ids-details-grid">
                     <div>
                       <dt>Source IP</dt>
-                      <dd>{selectedAlert.srcIp}</dd>
+                      <dd>{selectedAlert.source_ip || selectedAlert.srcIp || "—"}</dd>
                     </div>
                     <div>
                       <dt>Destination IP</dt>
-                      <dd>{selectedAlert.destIp}</dd>
+                      <dd>{selectedAlert.destination_ip || selectedAlert.destIp || "—"}</dd>
                     </div>
                     <div>
                       <dt>Source port</dt>
-                      <dd>{selectedAlert.srcPort ?? "—"}</dd>
+                      <dd>{selectedAlert.srcPort || selectedAlert.source_port || "—"}</dd>
                     </div>
                     <div>
                       <dt>Destination port</dt>
-                      <dd>{selectedAlert.destPort ?? "—"}</dd>
+                      <dd>{selectedAlert.destPort || selectedAlert.destination_port || "—"}</dd>
                     </div>
                     <div>
                       <dt>Protocol</dt>
-                      <dd>{selectedAlert.protocol}</dd>
+                      <dd>{selectedAlert.protocol || "TCP"}</dd>
                     </div>
                     <div>
                       <dt>Sensor</dt>
-                      <dd>{selectedAlert.sensor}</dd>
+                      <dd>{selectedAlert.sensor || "Network Sensor"}</dd>
                     </div>
                   </dl>
                 )}
@@ -665,10 +790,7 @@ function IDSPage() {
                   Detection Notes
                 </h3>
                 <p className="ids-details-text">
-                  High rate of suspicious packets observed from this source
-                  within a short time window. Pattern matches DDoS / brute force
-                  reconnaissance profiles used against exposed services in SME
-                  networks.
+                  {selectedAlert.description || "High rate of suspicious packets observed from this source within a short time window. Pattern matches known attack profiles used against exposed services in SME networks."}
                 </p>
               </div>
             </div>
@@ -711,251 +833,210 @@ function IDSPage() {
       {/* Explainability Tab */}
       {activeTab === "explainability" && (
         <section className="ids-explain-grid">
-          {/* SHAP overview */}
+          {/* Detection Lookup */}
           <div className="aegis-card">
             <div className="aegis-card-header">
-              <h2>ML Model Explainability (SHAP)</h2>
+              <h2>Explain Detection</h2>
+              <span className="aegis-card-subtitle">
+                Enter a detection ID to view SHAP feature importance
+              </span>
             </div>
             <div className="ids-explain-content">
-              <p>
-                Aegis IDS uses SHAP values to quantify how each traffic feature
-                pushes a prediction towards benign or malicious. Values shown
-                here are demo data wired for UI validation.
-              </p>
-              <p className="ids-explain-note">
-                In production, this tab will render SHAP summaries for each
-                model version, enabling analysts to validate decisions and meet
-                compliance expectations.
-              </p>
-            </div>
-          </div>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                <input
+                  type="text"
+                  value={detectionIdInput}
+                  onChange={(e) => setDetectionIdInput(e.target.value)}
+                  placeholder="Enter Detection ID (e.g., det_12345)"
+                  className="ids-search-input"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  className="ids-pentest-btn"
+                  onClick={handleGetExplanation}
+                  disabled={explanationLoading}
+                >
+                  {explanationLoading ? "Analyzing..." : "Get Explanation"}
+                </button>
+              </div>
 
-          {/* Model information */}
-          <div className="aegis-card">
-            <div className="aegis-card-header">
-              <h2>Model Information</h2>
-            </div>
-            <div className="ids-model-info">
-              <div className="ids-model-row">
-                <span>Model</span>
-                <span>XGBoost (Ensemble v2)</span>
-              </div>
-              <div className="ids-model-row">
-                <span>Macro-F1</span>
-                <span className="ids-model-value">92%</span>
-              </div>
-              <div className="ids-model-row">
-                <span>Precision</span>
-                <span className="ids-model-value">90%</span>
-              </div>
-              <div className="ids-model-row">
-                <span>Recall</span>
-                <span className="ids-model-value">93%</span>
-              </div>
-              <div className="ids-model-row">
-                <span>ROC-AUC</span>
-                <span className="ids-model-value">0.97</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Feature importance */}
-          <div className="aegis-card">
-            <div className="aegis-card-header">
-              <h2>Feature Importance (SHAP Values)</h2>
-            </div>
-            <div className="ids-feature-list">
-              {[
-                {
-                  name: "pkt_rate",
-                  desc: "Packets per second within the flow window.",
-                  value: 0.41,
-                },
-                {
-                  name: "syn_ratio",
-                  desc: "Ratio of SYN flags to overall packets.",
-                  value: 0.36,
-                },
-                {
-                  name: "byte_rate",
-                  desc: "Bytes per second to destination.",
-                  value: 0.28,
-                },
-                {
-                  name: "flow_duration",
-                  desc: "Lifetime of the flow in seconds.",
-                  value: 0.19,
-                },
-                {
-                  name: "avg_pkt_size",
-                  desc: "Average packet size across the flow.",
-                  value: 0.12,
-                },
-              ].map((f) => (
-                <div key={f.name} className="ids-feature-row">
-                  <div className="ids-feature-main">
-                    <div className="ids-feature-name">{f.name}</div>
-                    <div className="ids-feature-desc">{f.desc}</div>
-                  </div>
-                  <div className="ids-feature-shap">
-                    <div className="ids-bar">
-                      <div
-                        className="ids-bar-fill ids-bar-fill--purple"
-                        style={{
-                          width: `${Math.min(100, f.value * 100 + 10)}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="ids-bar-value">{f.value.toFixed(2)}</span>
-                  </div>
+              {explanationError && (
+                <div style={{ padding: '1rem', background: '#fee', color: '#c00', borderRadius: '8px', marginBottom: '1rem' }}>
+                  {explanationError}
                 </div>
-              ))}
+              )}
+
+              {!explanation && !explanationLoading && !explanationError && (
+                <p className="ids-explain-note">
+                  Aegis IDS uses SHAP values to quantify how each traffic feature
+                  pushes a prediction towards benign or malicious.
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Example explanation */}
-          <div className="aegis-card ids-explain-example">
-            <div className="aegis-card-header">
-              <h2>Example: DDoS SYN Flood Prediction</h2>
-            </div>
-            <ul className="ids-explain-example-list">
-              <li>
-                <span className="ids-explain-dot ids-explain-dot--purple" />
-                <strong>pkt_rate:</strong> extremely high packet rate relative
-                to baseline traffic on this interface.
-              </li>
-              <li>
-                <span className="ids-explain-dot ids-explain-dot--cyan" />
-                <strong>syn_ratio:</strong> majority of packets contain SYN
-                flags with very few ACKs observed, consistent with half-open
-                connection floods.
-              </li>
-              <li>
-                <span className="ids-explain-dot ids-explain-dot--amber" />
-                <strong>flow_duration:</strong> flows are short-lived but
-                repeated towards the same destination service.
-              </li>
-              <li>
-                <span className="ids-explain-dot ids-explain-dot--emerald" />
-                <strong>byte_rate:</strong> high byte rate to port 443 across
-                many parallel connections.
-              </li>
-            </ul>
-            <p className="ids-explain-verdict">
-              <strong>Verdict:</strong> feature contributions strongly support a
-              DDoS SYN flood classification with high confidence, targeting a
-              public-facing HTTPS service.
-            </p>
-          </div>
+          {/* Explanation Result */}
+          {explanation && (
+            <>
+              <div className="aegis-card">
+                <div className="aegis-card-header">
+                  <h2>Feature Importance (SHAP Values)</h2>
+                  <span className="aegis-card-subtitle">
+                    Detection ID: {explanation.detection_id}
+                  </span>
+                </div>
+                <div className="ids-feature-list">
+                  {explanation.feature_importance ? (
+                    Object.entries(explanation.feature_importance)
+                      .sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))
+                      .map(([name, value]) => (
+                        <div key={name} className="ids-feature-row">
+                          <div className="ids-feature-main">
+                            <div className="ids-feature-name">{name}</div>
+                            <div className="ids-feature-desc">Feature contribution</div>
+                          </div>
+                          <div className="ids-feature-shap">
+                            <div className="ids-bar">
+                              <div
+                                className={`ids-bar-fill ${value > 0 ? 'ids-bar-fill--purple' : 'ids-bar-fill--green'}`}
+                                style={{
+                                  width: `${Math.min(100, Math.abs(value) * 100 + 10)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="ids-bar-value">{value.toFixed(4)}</span>
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <p style={{ padding: '1rem', color: '#888' }}>No feature importance data available.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="aegis-card ids-explain-example">
+                <div className="aegis-card-header">
+                  <h2>Explanation Narrative</h2>
+                </div>
+                <div className="ids-explain-content">
+                  <p>{explanation.explanation}</p>
+                  {explanation.model_used && (
+                    <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#666' }}>
+                      <strong>Model Used:</strong> {explanation.model_used}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </section>
       )}
 
       {/* Analytics Tab */}
       {activeTab === "analytics" && (
         <section className="ids-analytics-grid">
-          {/* Alert Timeline */}
+          {/* Metrics Summary */}
           <div className="aegis-card">
             <div className="aegis-card-header">
-              <h2>Alert Timeline</h2>
+              <h2>Metrics Summary</h2>
               <span className="aegis-card-subtitle">
-                Alerts per hour · Last 24h
+                Overview of system activity
               </span>
+            </div>
+            <div className="ids-kpi-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', padding: '1rem' }}>
+              <div className="ids-kpi-card">
+                <div className="ids-kpi-label">Total Detections</div>
+                <div className="ids-kpi-value">{metrics?.total_detections || 0}</div>
+              </div>
+              <div className="ids-kpi-card">
+                <div className="ids-kpi-label">Total Alerts</div>
+                <div className="ids-kpi-value">{metrics?.total_alerts || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Attack Counts */}
+          <div className="aegis-card">
+            <div className="aegis-card-header">
+              <h2>Attack Counts</h2>
+              <span className="aegis-card-subtitle">
+                Total detections by attack type
+              </span>
+            </div>
+            <div className="ids-table-wrapper">
+              <table className="ids-table">
+                <thead>
+                  <tr>
+                    <th>Attack Type</th>
+                    <th>Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics?.attack_counts ? (
+                    Object.entries(metrics.attack_counts)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([type, count]) => (
+                        <tr key={type}>
+                          <td style={{ textTransform: 'capitalize' }}>{type.replace(/_/g, ' ')}</td>
+                          <td>{count}</td>
+                        </tr>
+                      ))
+                  ) : (
+                    <tr>
+                      <td colSpan={2} style={{ textAlign: 'center', color: '#888' }}>No data available</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Severity Counts */}
+          <div className="aegis-card">
+            <div className="aegis-card-header">
+              <h2>Severity Counts</h2>
+              <span className="aegis-card-subtitle">
+                Total detections by severity
+              </span>
+            </div>
+            <div className="ids-table-wrapper">
+              <table className="ids-table">
+                <thead>
+                  <tr>
+                    <th>Severity</th>
+                    <th>Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics?.severity_counts ? (
+                    Object.entries(metrics.severity_counts)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([severity, count]) => (
+                        <tr key={severity}>
+                          <td><SeverityPill severity={severity} /></td>
+                          <td>{count}</td>
+                        </tr>
+                      ))
+                  ) : (
+                    <tr>
+                      <td colSpan={2} style={{ textAlign: 'center', color: '#888' }}>No data available</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Placeholder for Time Series */}
+          <div className="aegis-card">
+            <div className="aegis-card-header">
+              <h2>Time Series Analysis</h2>
             </div>
             <div className="aegis-chart-placeholder">
               <span>
-                Timeline chart placeholder — integrate with IDS metrics API.
+                Time-series charts will be available when /metrics/attacks/time-series endpoint is ready.
               </span>
             </div>
-          </div>
-
-          {/* Top Source IPs */}
-          <div className="aegis-card">
-            <div className="aegis-card-header">
-              <h2>Top Source IPs</h2>
-            </div>
-            <ul className="ids-top-ips-new">
-              {[
-                { ip: "203.0.113.45", count: 142, sensor: "Edge Firewall" },
-                { ip: "198.51.100.77", count: 96, sensor: "VPN Gateway" },
-                { ip: "192.0.2.200", count: 63, sensor: "Core Sensor" },
-                { ip: "10.0.0.94", count: 37, sensor: "Internal Sensor" },
-              ].map((item) => (
-                <li key={item.ip} className="ids-top-ip-item">
-                  <div className="ids-top-ip-left">
-                    <span className="ids-top-ip-dot" />
-                    <div>
-                      <p className="ids-top-ip-address">{item.ip}</p>
-                      <p className="ids-top-ip-sensor">{item.sensor}</p>
-                    </div>
-                  </div>
-                  <span className="ids-top-ip-count">{item.count} alerts</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Confidence distribution */}
-          <div className="aegis-card">
-            <div className="aegis-card-header">
-              <h2>Confidence Score Distribution</h2>
-              <span className="aegis-card-subtitle">
-                Histogram of model score buckets
-              </span>
-            </div>
-            <div className="aegis-chart-placeholder">
-              <span>Histogram placeholder — plug in model score distribution.</span>
-            </div>
-          </div>
-
-          {/* Model performance table */}
-          <div className="aegis-card ids-metrics-table-card">
-            <div className="aegis-card-header">
-              <h2>IDS Model Performance</h2>
-            </div>
-            <table className="ids-metrics-table">
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Macro-F1</th>
-                  <th>Precision</th>
-                  <th>Recall</th>
-                  <th>ROC-AUC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  {
-                    name: "XGBoost Baseline",
-                    f1: "0.89",
-                    precision: "0.88",
-                    recall: "0.90",
-                    auc: "0.95",
-                  },
-                  {
-                    name: "XGBoost Ensemble v2",
-                    f1: "0.92",
-                    precision: "0.90",
-                    recall: "0.93",
-                    auc: "0.97",
-                  },
-                  {
-                    name: "CNN-LSTM Prototype",
-                    f1: "0.90",
-                    precision: "0.89",
-                    recall: "0.91",
-                    auc: "0.96",
-                  },
-                ].map((m) => (
-                  <tr key={m.name}>
-                    <td>{m.name}</td>
-                    <td>{m.f1}</td>
-                    <td>{m.precision}</td>
-                    <td>{m.recall}</td>
-                    <td>{m.auc}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </section>
       )}
