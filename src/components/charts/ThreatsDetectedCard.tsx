@@ -1,0 +1,162 @@
+import React from "react"; 
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
+import { TrendingUp } from "lucide-react";
+import "./ThreatsDetectedCard.css";
+
+export type ThreatPoint = {
+  label: string;
+  value: number;
+};
+
+export type ThreatsDetectedCardProps = {
+  title?: string;
+  data?: ThreatPoint[];
+  minY?: number;
+  maxY?: number;
+  loading?: boolean;
+  emptyMessage?: string;
+};
+
+const defaultData: ThreatPoint[] = [
+  { label: "Jan", value: 80 },
+  { label: "Feb", value: 110 },
+  { label: "Mar", value: 70 },
+  { label: "Apr", value: 90 },
+  { label: "May", value: 130 },
+  { label: "Jun", value: 160 },
+  { label: "Jul", value: 140 },
+  { label: "Aug", value: 120 },
+  { label: "Sep", value: 115 },
+  { label: "Oct", value: 150 },
+  { label: "Nov", value: 190 },
+  { label: "Dec", value: 220 },
+];
+
+const ThreatsDetectedCard: React.FC<ThreatsDetectedCardProps> = ({
+  title = "Threats Detected",
+  data,
+  minY = 50,
+  maxY = 250,
+  loading = false,
+  emptyMessage = "No threat data available.",
+}) => {
+  const chartData = data && data.length > 0 ? data : defaultData;
+  const isEmpty = !data || data.length === 0;
+
+  return (
+    <div className="threats-card">
+      <div className="threats-card__header">
+        <div className="threats-card__title-row">
+          <span className="threats-card__icon" style={{ color: "rgb(59, 130, 246)" }}>
+            <TrendingUp size={18} strokeWidth={1.5} color="rgb(59, 130, 246)" />
+          </span>
+          <span className="threats-card__title" style={{ color: "rgb(59, 130, 246)", fontWeight: 600, fontSize: "16px" }}>
+            {title}
+          </span>
+        </div>
+      </div>
+
+      <div className="threats-card__chart">
+        {loading ? (
+          <div className="threats-card__skeleton">
+            <div className="threats-card__skeleton-line" />
+            <div className="threats-card__skeleton-line threats-card__skeleton-line--short" />
+            <div className="threats-card__skeleton-line threats-card__skeleton-line--medium" />
+          </div>
+        ) : isEmpty ? (
+          <div className="threats-card__empty">
+            <p>{emptyMessage}</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
+            >
+              <defs>
+                <linearGradient id="threatsLineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#6366f1" />
+                  <stop offset="50%" stopColor="#a855f7" />
+                  <stop offset="100%" stopColor="#22d3ee" />
+                </linearGradient>
+
+                <filter id="lineGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                  <feComponentTransfer in="coloredBlur" result="fadedBlur">
+                    <feFuncA type="linear" slope="0.4" />
+                  </feComponentTransfer>
+                  <feMerge>
+                    <feMergeNode in="fadedBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <CartesianGrid
+                stroke="#1e293b"
+                strokeDasharray="3 3"
+                horizontal
+                vertical={false}
+                strokeOpacity={0.5}
+              />
+
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#64748b", fontSize: 11 }}
+                height={30}
+              />
+
+              <YAxis
+                domain={[minY, maxY]}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#64748b", fontSize: 11 }}
+                width={40}
+                tickCount={5}
+              />
+
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(10, 20, 40, 0.95)",
+                  border: "1px solid rgba(148, 163, 184, 0.3)",
+                  borderRadius: "8px",
+                  color: "#e5edff",
+                  fontSize: "12px",
+                }}
+                labelStyle={{ color: "#cbd5e1" }}
+                cursor={{
+                  stroke: "#64748b",
+                  strokeWidth: 1,
+                  strokeDasharray: "3 3",
+                }}
+              />
+
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="url(#threatsLineGradient)"
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 5, fill: "#a855f7", stroke: "#fff", strokeWidth: 2 }}
+                filter="url(#lineGlow)"
+                isAnimationActive
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ThreatsDetectedCard;

@@ -13,9 +13,9 @@ import "../../index.css";
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", path: "/dashboard", Icon: LayoutDashboard },
   { key: "ids", label: "IDS Alerts", path: "/ids", Icon: ShieldAlert },
-  { key: "pentesting", label: "Pentesting", path: "/pentesting", Icon: Shield },
-  { key: "advisor", label: "Advisor Chatbot", path: "/advisor", Icon: Bot },
-  { key: "settings", label: "Settings", path: "/settings", Icon: Settings },
+  { key: "pentesting", label: "Pentesting", path: "/pentest-404", Icon: Shield },
+  { key: "advisor", label: "Advisor Chatbot", path: "/advisor-404", Icon: Bot },
+  { key: "settings", label: "Settings", path: "/settings-404", Icon: Settings },
 ];
 
 function AppShell({ children }) {

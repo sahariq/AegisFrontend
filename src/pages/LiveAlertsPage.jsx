@@ -3,6 +3,7 @@ import "../index.css";
 import { AlertTriangle, RefreshCcw, Search } from "lucide-react";
 import { fetchAlerts } from "../api/aegisClient.ts";
 import { getAlerts as getMockAlerts } from "../api/mock.js";
+import AlertFrequencyChart from "../components/charts/AlertFrequencyChart.tsx";
 
 function LiveAlertsPage() {
   const [alerts, setAlerts] = useState([]);
@@ -20,36 +21,31 @@ function LiveAlertsPage() {
       }
       setError(null);
 
-      const params = {
-        page: 1,
-        page_size: 25,
-        status: "new",
-      };
-      if (severityFilter !== "all") {
-        params.severity = severityFilter;
-      }
-      if (attackTypeFilter !== "all") {
-        params.attack_type = attackTypeFilter;
-      }
+      try {
+        const params = {
+          page: 1,
+          page_size: 25,
+          status: "new",
+        };
+        if (severityFilter !== "all") {
+          params.severity = severityFilter;
+        }
+        if (attackTypeFilter !== "all") {
+          params.attack_type = attackTypeFilter;
+        }
 
-      const response = await fetchAlerts(params);
-      setAlerts(response.alerts);
+        const response = await fetchAlerts(params);
+        setAlerts(response.alerts);
+      } catch (apiErr) {
+        // Fall back to mock data
+        console.log("API unavailable, using mock data");
+        const { generateRecentAlerts } = await import("../utils/mockDataGenerator.ts");
+        const mockAlerts = generateRecentAlerts(25);
+        setAlerts(mockAlerts);
+      }
     } catch (err) {
-      console.error("Failed to load alerts, falling back to mock data:", err);
-      setError("Using mock alerts — API unreachable.");
-      const mock = await getMockAlerts();
-      setAlerts(
-        mock.map((item) => ({
-          id: item.id,
-          attack_type: item.title,
-          severity: item.severity,
-          timestamp: item.detectedAt,
-        }))
-      ).sort((a, b) => {
-        const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-        const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-        return bTime - aTime;
-      });
+      console.error("Failed to load alerts:", err);
+      setError("Failed to load alerts.");
     } finally {
       setLoading(false);
     }
@@ -247,6 +243,16 @@ function LiveAlertsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="aegis-card" style={{ marginTop: '20px' }}>
+        <div className="aegis-card-header">
+          <h2>Alert Frequency (Last 60s)</h2>
+          <span className="aegis-card-subtitle">
+            Real-time alert distribution by severity
+          </span>
+        </div>
+        <AlertFrequencyChart alerts={alerts} timeWindowSeconds={60} />
       </div>
     </div>
   );

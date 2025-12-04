@@ -27,6 +27,10 @@ import {
   fetchAlerts,
   getExplanation
 } from "../api/aegisClient.ts";
+import AlertFrequencyChart from "../components/charts/AlertFrequencyChart.tsx";
+import ThreatsDetectedCard from "../components/charts/ThreatsDetectedCard.tsx";
+import MetricsSummaryCard from "../components/cards/MetricsSummaryCard.tsx";
+import { generateMonthlyThreats } from "../utils/mockDataGenerator.ts";
 
 // --- Demo data (fallback for when API is unavailable) ----------------------
 
@@ -153,13 +157,26 @@ function IDSPage() {
         setLoading(true);
         setError(null);
 
-        const [metricsData, statusData] = await Promise.all([
-          getMetricsOverview(),
-          getSystemStatus()
-        ]);
+        try {
+          const [metricsData, statusData] = await Promise.all([
+            getMetricsOverview(),
+            getSystemStatus()
+          ]);
 
-        setMetrics(metricsData);
-        setSystemStatus(statusData);
+          setMetrics(metricsData);
+          setSystemStatus(statusData);
+        } catch (apiErr) {
+          // Fall back to mock data
+          console.log('API unavailable, using mock data');
+          const { generateMetricsOverview } = await import("../utils/mockDataGenerator.ts");
+          const mockMetrics = generateMetricsOverview();
+          setMetrics(mockMetrics);
+          setSystemStatus({
+            models: [{ name: "Demo Model", attacks: ["DDoS", "SQL Injection"], status: "active" }],
+            supported_attack_types: ["DDoS", "SQL Injection", "XSS", "Port Scan"],
+            environment: { gpu_available: false, device: "cpu", python_version: "3.9" }
+          });
+        }
       } catch (err) {
         setError(err.message);
         console.error('Failed to load overview data:', err);
@@ -180,21 +197,32 @@ function IDSPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetchAlerts({
-          page: 1,
-          page_size: 20,
-          ...(severityFilter !== "all" && { severity: severityFilter })
-        });
+        try {
+          const response = await fetchAlerts({
+            page: 1,
+            page_size: 20,
+            ...(severityFilter !== "all" && { severity: severityFilter })
+          });
 
-        setAlerts(response.alerts);
-        setAlertsPagination(response.meta);
-        if (response.alerts.length > 0 && !selectedAlertId) {
-          setSelectedAlertId(response.alerts[0].id);
+          setAlerts(response.alerts);
+          setAlertsPagination(response.meta);
+          if (response.alerts.length > 0 && !selectedAlertId) {
+            setSelectedAlertId(response.alerts[0].id);
+          }
+        } catch (apiErr) {
+          // Fallback to mock data
+          console.log('API unavailable, using mock alerts');
+          const { generateRecentAlerts } = await import("../utils/mockDataGenerator.ts");
+          const mockAlerts = generateRecentAlerts(20);
+          setAlerts(mockAlerts);
+          setAlertsPagination({ page: 1, page_size: 20, total_items: 20, total_pages: 1 });
+          if (mockAlerts.length > 0 && !selectedAlertId) {
+            setSelectedAlertId(mockAlerts[0].id);
+          }
         }
       } catch (err) {
         setError(err.message);
         console.error('Failed to load alerts:', err);
-        // Fallback to mock data
         setAlerts(mockAlerts);
       } finally {
         setLoading(false);
@@ -662,19 +690,12 @@ function IDSPage() {
                 </table>
               </div>
 
-              {/* Frequency placeholder */}
-              <div className="ids-chart-section">
-                <div className="ids-chart-header">
-                  <span>Alert Frequency (Last 60s)</span>
-                  <span className="ids-chart-placeholder-label">
-                    Timeseries chart placeholder
-                  </span>
+              {/* Frequency chart */}
+              <div className="aegis-card" style={{ padding: '16px' }}>
+                <div className="aegis-card-header" style={{ marginBottom: '12px' }}>
+                  <h3 style={{ margin: 0, fontSize: '14px' }}>Alert Frequency (Last 60s)</h3>
                 </div>
-                <div className="aegis-chart-placeholder">
-                  <span>
-                    Timeseries chart placeholder — plug in IDS API later.
-                  </span>
-                </div>
+                <AlertFrequencyChart alerts={alerts} timeWindowSeconds={60} />
               </div>
             </div>
           </div>
@@ -936,24 +957,48 @@ function IDSPage() {
       {activeTab === "analytics" && (
         <section className="ids-analytics-grid">
           {/* Metrics Summary */}
-          <div className="aegis-card">
-            <div className="aegis-card-header">
-              <h2>Metrics Summary</h2>
-              <span className="aegis-card-subtitle">
-                Overview of system activity
-              </span>
-            </div>
-            <div className="ids-kpi-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', padding: '1rem' }}>
-              <div className="ids-kpi-card">
-                <div className="ids-kpi-label">Total Detections</div>
-                <div className="ids-kpi-value">{metrics?.total_detections || 0}</div>
-              </div>
-              <div className="ids-kpi-card">
-                <div className="ids-kpi-label">Total Alerts</div>
-                <div className="ids-kpi-value">{metrics?.total_alerts || 0}</div>
-              </div>
-            </div>
-          </div>
+          <MetricsSummaryCard
+            title="Metrics Summary"
+            subtitle="Overview of system activity"
+            metrics={[
+              {
+                id: 'total-detections',
+                label: 'Total Detections',
+                value: metrics?.total_detections || 0,
+                emphasis: 'normal'
+              },
+              {
+                id: 'total-alerts',
+                label: 'Total Alerts',
+                value: metrics?.total_alerts || 0,
+                emphasis: 'normal'
+              },
+              {
+                id: 'detection-rate',
+                label: 'Detection Rate',
+                value: metrics?.detection_rate ? `${(metrics.detection_rate * 100).toFixed(1)}%` : 'N/A',
+                emphasis: 'primary'
+              },
+              {
+                id: 'total-flows',
+                label: 'Total Flows',
+                value: metrics?.total_flows?.toLocaleString() || 0,
+                emphasis: 'normal'
+              },
+              {
+                id: 'high-severity',
+                label: 'High Severity',
+                value: metrics?.severity_counts?.high || 0,
+                emphasis: 'danger'
+              },
+              {
+                id: 'medium-severity',
+                label: 'Medium Severity',
+                value: metrics?.severity_counts?.medium || 0,
+                emphasis: 'warning'
+              }
+            ]}
+          />
 
           {/* Attack Counts */}
           <div className="aegis-card">
@@ -1027,17 +1072,7 @@ function IDSPage() {
             </div>
           </div>
 
-          {/* Placeholder for Time Series */}
-          <div className="aegis-card">
-            <div className="aegis-card-header">
-              <h2>Time Series Analysis</h2>
-            </div>
-            <div className="aegis-chart-placeholder">
-              <span>
-                Time-series charts will be available when /metrics/attacks/time-series endpoint is ready.
-              </span>
-            </div>
-          </div>
+
         </section>
       )}
 

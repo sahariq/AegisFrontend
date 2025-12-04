@@ -6,6 +6,7 @@ import DetectionPage from "./pages/DetectionPage.jsx";
 import MetricsPage from "./pages/MetricsPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import IDSPage from "./pages/IDSPage.jsx";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function AppRoutes() {
   return (
@@ -21,7 +22,7 @@ function AppRoutes() {
       <Route path="/ids" element={<IDSPage />} />
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

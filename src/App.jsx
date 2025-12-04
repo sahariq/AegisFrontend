@@ -4,6 +4,7 @@ import "./index.css";
 import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import IDSPage from "./pages/IDSPage.jsx";
+import NotFoundPage from "./pages/NotFoundPage.tsx";
 import AppShell from "./components/layout/AppShell.jsx";
 import HealthCheck from "./components/HealthCheck.tsx";
 
@@ -109,6 +110,7 @@ function App() {
             </AppShell>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
   );

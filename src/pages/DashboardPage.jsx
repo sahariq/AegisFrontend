@@ -8,9 +8,17 @@ import {
   Clock3,
   Lightbulb,
   ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 import RecentAlertCard from "../components/alerts/RecentAlertCard.jsx";
+import ThreatsDetectedCard from "../components/charts/ThreatsDetectedCard.tsx";
 import { getMetricsOverview, fetchAlerts } from "../api/aegisClient.ts";
+import { 
+  generateMonthlyThreats, 
+  generateRecentAlerts, 
+  generateMetricsOverview,
+  ThreatSimulator 
+} from "../utils/mockDataGenerator.ts";
 
 function StatCard({ label, value, delta, trend = "neutral", Icon }) {
   return (
@@ -32,8 +40,10 @@ function StatCard({ label, value, delta, trend = "neutral", Icon }) {
 function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
   const [recentAlerts, setRecentAlerts] = useState([]);
+  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [useMockData, setUseMockData] = useState(false);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -41,14 +51,49 @@ function DashboardPage() {
         setLoading(true);
         setError(null);
 
-        // Fetch metrics and recent alerts in parallel
-        const [metricsData, alertsData] = await Promise.all([
-          getMetricsOverview(),
-          fetchAlerts({ page: 1, page_size: 4, status: 'new' })
-        ]);
+        try {
+          // Try to fetch real data from API
+          const [metricsData, alertsData] = await Promise.all([
+            getMetricsOverview(),
+            fetchAlerts({ page: 1, page_size: 4, status: 'new' })
+          ]);
 
-        setMetrics(metricsData);
-        setRecentAlerts(alertsData.alerts);
+          setMetrics(metricsData);
+          setRecentAlerts(alertsData.alerts);
+
+          // Process alerts data for chart - group by date and severity
+          const alertsByDate = {};
+          alertsData.alerts.forEach(alert => {
+            const date = new Date(alert.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (!alertsByDate[date]) {
+              alertsByDate[date] = { date, high: 0, medium: 0, low: 0 };
+            }
+            const severity = alert.severity.toLowerCase();
+            if (severity === 'high' || severity === 'critical') {
+              alertsByDate[date].high++;
+            } else if (severity === 'medium') {
+              alertsByDate[date].medium++;
+            } else {
+              alertsByDate[date].low++;
+            }
+          });
+
+          setChartData(Object.values(alertsByDate));
+          setUseMockData(false);
+        } catch (apiError) {
+          // If API fails, use mock data
+          console.log('API unavailable, using mock data:', apiError.message);
+          setUseMockData(true);
+          
+          // Generate mock data
+          const mockMetrics = generateMetricsOverview();
+          const mockAlerts = generateRecentAlerts(4);
+          const mockChartData = generateMonthlyThreats();
+          
+          setMetrics(mockMetrics);
+          setRecentAlerts(mockAlerts);
+          setChartData(mockChartData);
+        }
       } catch (err) {
         setError(err.message);
         console.error('Failed to load dashboard data:', err);
@@ -58,6 +103,19 @@ function DashboardPage() {
     }
 
     loadDashboardData();
+
+    // Set up real-time threat simulator
+    const simulator = new ThreatSimulator();
+    simulator.onNewThreat((newAlert) => {
+      setRecentAlerts(prev => [newAlert, ...prev.slice(0, 3)]);
+    });
+    
+    // Start simulating threats every 10 seconds
+    simulator.start(10000);
+
+    return () => {
+      simulator.stop();
+    };
   }, []);
 
   return (
@@ -72,7 +130,7 @@ function DashboardPage() {
         <div className="aegis-dash-header-actions">
           <div className="aegis-env-pill">
             <span className="aegis-env-dot" />
-            <span>Environment: Production · IDS {loading ? 'Loading...' : error ? 'Error' : 'Healthy'}</span>
+            <span>Environment: {useMockData ? 'Demo (Mock Data)' : 'Production'} · IDS {loading ? 'Loading...' : error ? 'Error' : 'Healthy'}</span>
           </div>
           <button className="aegis-header-icon-btn" aria-label="Notifications">
             <Bell size={18} aria-hidden="true" />
@@ -122,27 +180,11 @@ function DashboardPage() {
 
       <section className="aegis-dash-main-grid">
         <div className="aegis-dash-left-col">
-          <div className="aegis-card">
-            <div className="aegis-card-header">
-              <div>
-                <h2>Threats Detected</h2>
-                <span className="aegis-card-subtitle">
-                  Connect your telemetry feeds for richer insights.
-                </span>
-              </div>
-              <button className="aegis-pill-switch" type="button">
-                Last 12 months <ChevronDown size={14} aria-hidden="true" />
-              </button>
-            </div>
-            <div className="aegis-chart-placeholder">
-              <div className="aegis-chart-empty">
-                <p className="aegis-chart-empty-title">Chart placeholder</p>
-                <p className="aegis-chart-empty-copy">
-                  Connect the IDS API to visualize detections over time.
-                </p>
-              </div>
-            </div>
-          </div>
+          <ThreatsDetectedCard 
+            data={chartData.map(item => ({ label: item.month || item.date || item.label, value: item.value }))} 
+            loading={loading}
+            emptyMessage="Connect the IDS API to visualize detections over time."
+          />
 
           <div className="aegis-card">
             <div className="aegis-card-header">
@@ -234,8 +276,8 @@ function DashboardPage() {
           <div className="aegis-card aegis-advisory-card">
             <div className="aegis-advisory-tag">Configuration · TLS</div>
             <div className="aegis-advisory-header">
-              <div className="aegis-advisory-icon">
-                <span>⚡</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MessageSquare size={32} strokeWidth={2} color="#f97316" />
               </div>
               <div>
                 <h2 className="aegis-advisory-title">Advisory Insights</h2>

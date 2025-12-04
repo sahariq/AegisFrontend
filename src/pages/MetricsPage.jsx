@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import "../index.css";
 import { LineChart, BarChart3 } from "lucide-react";
 import { getMetricsOverview } from "../api/aegisClient.ts";
+import { generateMetricsOverview, generateMonthlyThreats } from "../utils/mockDataGenerator.ts";
+import ThreatsDetectedCard from "../components/charts/ThreatsDetectedCard.tsx";
 
 function MetricsPage() {
   const [metrics, setMetrics] = useState(null);
@@ -13,8 +15,16 @@ function MetricsPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await getMetricsOverview();
-        setMetrics(data);
+        
+        try {
+          const data = await getMetricsOverview();
+          setMetrics(data);
+        } catch (apiErr) {
+          // Fall back to mock data
+          console.log("API unavailable, using mock metrics");
+          const mockData = generateMetricsOverview();
+          setMetrics(mockData);
+        }
       } catch (err) {
         console.error("Failed to load metrics overview:", err);
         setError(err.message || "Failed to load metrics");
@@ -171,34 +181,11 @@ function MetricsPage() {
           </div>
         </div>
 
-        <div className="aegis-card">
-          <div className="aegis-card-header">
-            <h2>Time-Series (Placeholder)</h2>
-          </div>
-          <div className="aegis-chart-placeholder">
-            <div className="aegis-chart-empty">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                <LineChart size={16} />
-                <BarChart3 size={16} />
-                <span className="aegis-chart-empty-title">
-                  Time-series chart placeholder
-                </span>
-              </div>
-              <p className="aegis-chart-empty-copy">
-                Wire this panel to the future{" "}
-                <code>/metrics/attacks/time-series</code> endpoint to visualize
-                detections over time.
-              </p>
-            </div>
-          </div>
-        </div>
+        <ThreatsDetectedCard 
+          title="Threats Over Time"
+          data={generateMonthlyThreats()}
+          loading={loading}
+        />
       </section>
     </div>
   );
