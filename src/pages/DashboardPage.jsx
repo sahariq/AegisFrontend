@@ -9,6 +9,10 @@ import {
   Lightbulb,
   ChevronDown,
   MessageSquare,
+  BrainCircuit,
+  Server,
+  ShieldHalf,
+  Gauge,
 } from "lucide-react";
 import RecentAlertCard from "../components/alerts/RecentAlertCard.jsx";
 import ThreatsDetectedCard from "../components/charts/ThreatsDetectedCard.tsx";
@@ -44,6 +48,35 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [useMockData, setUseMockData] = useState(false);
+
+  // Mock data for second row KPIs
+  const modelHealth = {
+    f1Score: 0.79,
+    rocAuc: 0.85,
+    status: "stable",
+    lastUpdated: "2 days ago",
+  };
+
+  const agentStatus = {
+    status: "online",
+    lastHeartbeatSeconds: 12,
+    cpuUsage: 34,
+    memoryUsageGb: 1.2,
+    throughputMbps: 4.1,
+    agentId: "aegis-edge-01",
+  };
+
+  const topAttacks = [
+    { name: "SYN Flood", percentage: 43 },
+    { name: "MITM ARP", percentage: 27 },
+    { name: "DNS Exfiltration", percentage: 18 },
+  ];
+
+  const riskScore = {
+    score: 62,
+    level: "moderate",
+    inputsSummary: "50 active alerts · 3 exposed services · 2 high-severity findings",
+  };
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -176,6 +209,203 @@ function DashboardPage() {
           trend="up"
           Icon={Lightbulb}
         />
+      </section>
+
+      {/* Second Row of KPI Cards */}
+      <section className="aegis-dash-top-row" style={{ marginTop: '16px' }}>
+        {/* Model Health Card */}
+        <div className="aegis-stat-card">
+          <div className="aegis-stat-meta">
+            <div className="aegis-stat-icon">
+              <BrainCircuit size={18} strokeWidth={1.6} />
+            </div>
+            <span className="aegis-stat-label">Model Health</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+            <div className="aegis-stat-main-row">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span className="aegis-stat-value">{modelHealth.f1Score.toFixed(2)}</span>
+                <span style={{ fontSize: '11px', color: '#9ca9cb' }}>F1 Score</span>
+              </div>
+              <span 
+                className="aegis-stat-chip" 
+                style={{ 
+                  background: modelHealth.status === 'stable' ? 'rgba(34, 197, 94, 0.15)' : 
+                             modelHealth.status === 'degraded' ? 'rgba(251, 191, 36, 0.15)' : 
+                             'rgba(239, 68, 68, 0.15)',
+                  color: modelHealth.status === 'stable' ? '#4ade80' : 
+                         modelHealth.status === 'degraded' ? '#fbbf24' : 
+                         '#f87171'
+                }}
+              >
+                {modelHealth.status.charAt(0).toUpperCase() + modelHealth.status.slice(1)}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#9ca9cb' }}>
+                ROC-AUC: <span style={{ fontWeight: 600, color: '#e5e7eb' }}>{modelHealth.rocAuc.toFixed(2)}</span>
+              </span>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                Updated {modelHealth.lastUpdated}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Agent Status Card */}
+        <div className="aegis-stat-card">
+          <div className="aegis-stat-meta">
+            <div className="aegis-stat-icon">
+              <Server size={18} strokeWidth={1.6} />
+            </div>
+            <span className="aegis-stat-label">Agent Status</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+            {/* Main Status Indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span 
+                style={{ 
+                  width: '10px', 
+                  height: '10px', 
+                  borderRadius: '50%', 
+                  background: agentStatus.status === 'online' ? '#4ade80' : 
+                             agentStatus.status === 'degraded' ? '#fbbf24' : 
+                             '#f87171',
+                  boxShadow: agentStatus.status === 'online' ? '0 0 8px rgba(74, 222, 128, 0.5)' : 
+                             agentStatus.status === 'degraded' ? '0 0 8px rgba(251, 191, 36, 0.5)' : 
+                             '0 0 8px rgba(248, 113, 113, 0.5)'
+                }}
+              />
+              <span className="aegis-stat-value" style={{ fontSize: '22px' }}>
+                {agentStatus.status.charAt(0).toUpperCase() + agentStatus.status.slice(1)}
+              </span>
+            </div>
+            
+            {/* Secondary Metrics - Two Columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+              <div>
+                <span style={{ color: '#9ca9cb' }}>Last heartbeat:</span>
+                <div style={{ color: '#e5e7eb', fontSize: '13px', fontWeight: 500, marginTop: '2px' }}>
+                  {agentStatus.lastHeartbeatSeconds} sec ago
+                </div>
+              </div>
+              <div>
+                <span style={{ color: '#9ca9cb' }}>CPU:</span>
+                <div style={{ color: '#e5e7eb', fontSize: '13px', fontWeight: 500, marginTop: '2px' }}>
+                  {agentStatus.cpuUsage}%
+                </div>
+              </div>
+              <div>
+                <span style={{ color: '#9ca9cb' }}>Memory:</span>
+                <div style={{ color: '#e5e7eb', fontSize: '13px', fontWeight: 500, marginTop: '2px' }}>
+                  {agentStatus.memoryUsageGb} GB
+                </div>
+              </div>
+              <div>
+                <span style={{ color: '#9ca9cb' }}>Throughput:</span>
+                <div style={{ color: '#e5e7eb', fontSize: '13px', fontWeight: 500, marginTop: '2px' }}>
+                  {agentStatus.throughputMbps} Mbps
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer - Agent ID */}
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+              Agent ID: {agentStatus.agentId}
+            </div>
+          </div>
+        </div>
+
+        {/* Top Attack Types Card */}
+        <div className="aegis-stat-card">
+          <div className="aegis-stat-meta">
+            <div className="aegis-stat-icon">
+              <ShieldHalf size={18} strokeWidth={1.6} />
+            </div>
+            <span className="aegis-stat-label">Top Attack Types</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+            {topAttacks.map((attack, index) => {
+              const barColors = [
+                { bg: 'rgba(139, 92, 246, 0.15)', fill: '#a78bfa' },
+                { bg: 'rgba(59, 130, 246, 0.15)', fill: '#60a5fa' },
+                { bg: 'rgba(6, 182, 212, 0.15)', fill: '#22d3ee' },
+              ];
+              const color = barColors[index] || barColors[0];
+              
+              return (
+                <div key={attack.name} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: '#e5e7eb', fontWeight: 500 }}>
+                      {attack.name}
+                    </span>
+                    <span style={{ fontSize: '13px', color: color.fill, fontWeight: 600 }}>
+                      {attack.percentage}%
+                    </span>
+                  </div>
+                  <div style={{ 
+                    width: '100%', 
+                    height: '6px', 
+                    background: color.bg, 
+                    borderRadius: '3px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ 
+                      width: `${attack.percentage}%`, 
+                      height: '100%', 
+                      background: color.fill,
+                      borderRadius: '3px',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Overall Risk Score Card */}
+        <div className="aegis-stat-card">
+          <div className="aegis-stat-meta">
+            <div className="aegis-stat-icon">
+              <Gauge size={18} strokeWidth={1.6} />
+            </div>
+            <span className="aegis-stat-label">Risk Score</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+            {/* Primary Metric */}
+            <div className="aegis-stat-main-row">
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <span className="aegis-stat-value">{riskScore.score}</span>
+                <span style={{ fontSize: '16px', color: '#9ca9cb', fontWeight: 500 }}>/ 100</span>
+              </div>
+              <span 
+                className="aegis-stat-chip" 
+                style={{ 
+                  background: riskScore.level === 'low' ? 'rgba(34, 197, 94, 0.15)' : 
+                             riskScore.level === 'moderate' ? 'rgba(251, 191, 36, 0.15)' : 
+                             'rgba(239, 68, 68, 0.15)',
+                  color: riskScore.level === 'low' ? '#4ade80' : 
+                         riskScore.level === 'moderate' ? '#fbbf24' : 
+                         '#f87171'
+                }}
+              >
+                {riskScore.level.charAt(0).toUpperCase() + riskScore.level.slice(1)}
+              </span>
+            </div>
+            
+            {/* Mini Breakdown */}
+            <div style={{ 
+              fontSize: '11px', 
+              color: '#9ca9cb', 
+              lineHeight: '1.5',
+              paddingTop: '4px',
+              borderTop: '1px solid rgba(148, 163, 184, 0.1)'
+            }}>
+              Inputs: {riskScore.inputsSummary}
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="aegis-dash-main-grid">

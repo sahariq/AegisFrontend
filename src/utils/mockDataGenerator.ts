@@ -18,18 +18,11 @@ export interface MockAlert {
 }
 
 const attackTypes = [
-  'SQL Injection',
-  'XSS Attack',
-  'DDoS',
-  'Port Scan',
+  'SYN Flood',
+  'ARP MITM',
   'Brute Force',
-  'Malware',
-  'Phishing',
-  'Man-in-the-Middle',
-  'Zero-Day Exploit',
-  'Ransomware',
-  'Buffer Overflow',
-  'DNS Spoofing',
+  'DNS Exfiltration',
+  'L7 Anomaly',
 ];
 
 const severities: Array<'low' | 'medium' | 'high'> = [

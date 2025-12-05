@@ -4,6 +4,7 @@ import "./index.css";
 import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import IDSPage from "./pages/IDSPage.jsx";
+import SettingsPage from "./pages/SettingsPage.tsx";
 import NotFoundPage from "./pages/NotFoundPage.tsx";
 import AppShell from "./components/layout/AppShell.jsx";
 import HealthCheck from "./components/HealthCheck.tsx";
@@ -107,6 +108,14 @@ function App() {
           element={
             <AppShell>
               <IDSPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <AppShell>
+              <SettingsPage />
             </AppShell>
           }
         />

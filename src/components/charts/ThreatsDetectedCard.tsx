@@ -52,16 +52,9 @@ const ThreatsDetectedCard: React.FC<ThreatsDetectedCardProps> = ({
   const isEmpty = !data || data.length === 0;
 
   return (
-    <div className="threats-card">
-      <div className="threats-card__header">
-        <div className="threats-card__title-row">
-          <span className="threats-card__icon" style={{ color: "rgb(59, 130, 246)" }}>
-            <TrendingUp size={18} strokeWidth={1.5} color="rgb(59, 130, 246)" />
-          </span>
-          <span className="threats-card__title" style={{ color: "rgb(59, 130, 246)", fontWeight: 600, fontSize: "16px" }}>
-            {title}
-          </span>
-        </div>
+    <div className="aegis-card">
+      <div className="aegis-card-header">
+        <h2>{title}</h2>
       </div>
 
       <div className="threats-card__chart">
