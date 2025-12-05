@@ -4,6 +4,15 @@ import { Settings, Bell, Zap, Plug2, Save } from "lucide-react";
 
 type TabType = "general" | "alerts" | "notifications" | "integrations";
 
+type AttackKey = "synFlood" | "mitmArp" | "dnsExfil" | "bruteForce" | "httpAbuse";
+
+type AttackToggle = {
+  key: AttackKey;
+  label: string;
+  description: string;
+  enabled: boolean;
+};
+
 function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("general");
 
@@ -13,12 +22,70 @@ function SettingsPage() {
   const [timezone, setTimezone] = useState("UTC");
   const [dateFormat, setDateFormat] = useState("YYYY-MM-DD");
 
+  // Alerts & Detection settings state
+  const [attackToggles, setAttackToggles] = useState<AttackToggle[]>([
+    {
+      key: "synFlood",
+      label: "SYN Flood",
+      description: "Detect volumetric TCP SYN-based denial of service attacks.",
+      enabled: true,
+    },
+    {
+      key: "mitmArp",
+      label: "MITM ARP Spoofing",
+      description: "Detect ARP poisoning and man-in-the-middle attempts on local segments.",
+      enabled: true,
+    },
+    {
+      key: "dnsExfil",
+      label: "DNS Exfiltration",
+      description: "Detect suspicious DNS tunneling and data exfiltration patterns.",
+      enabled: true,
+    },
+    {
+      key: "bruteForce",
+      label: "Brute Force Logins",
+      description: "Detect repeated failed authentication attempts against exposed services.",
+      enabled: true,
+    },
+    {
+      key: "httpAbuse",
+      label: "HTTP Layer 7 Abuse",
+      description: "Detect abnormal HTTP request rates and application-layer DoS behavior.",
+      enabled: true,
+    },
+  ]);
+
+  const [detectionSensitivity, setDetectionSensitivity] = useState<number>(70);
+  const [minSeverityForAlert, setMinSeverityForAlert] = useState<"low" | "medium" | "high">("low");
+  const [autoCloseLowSeverity, setAutoCloseLowSeverity] = useState<boolean>(false);
+  const [autoCloseHours, setAutoCloseHours] = useState<number>(24);
+
+  const toggleAttackEnabled = (key: AttackKey) => {
+    setAttackToggles((prev) =>
+      prev.map((a) => (a.key === key ? { ...a, enabled: !a.enabled } : a))
+    );
+  };
+
+  const getSensitivityLabel = (value: number): string => {
+    if (value <= 40) return "Low";
+    if (value <= 70) return "Balanced";
+    return "Aggressive";
+  };
+
   const handleSaveSettings = () => {
     const settings = {
+      // General
       organizationName,
       environment,
       timezone,
       dateFormat,
+      // Alerts & Detection
+      attackToggles,
+      detectionSensitivity,
+      minSeverityForAlert,
+      autoCloseLowSeverity,
+      autoCloseHours,
     };
     console.log("Saving settings:", settings);
     // TODO: Add API call to save settings
@@ -405,21 +472,265 @@ function SettingsPage() {
             <div className="aegis-card-header">
               <h2>Alerts & Detection</h2>
               <span className="aegis-card-subtitle">
-                Configure alert thresholds, detection rules, and notification
-                preferences.
+                Configure detection rules, attack coverage, and alert thresholds.
               </span>
             </div>
-            <div style={{ padding: "16px" }}>
-              <p
+            <div style={{ padding: "24px" }}>
+              {/* Main Grid */}
+              <div
                 style={{
-                  color: "#9ca9cb",
-                  fontSize: "14px",
-                  textAlign: "center",
-                  padding: "40px 20px",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                  gap: "24px",
+                  marginBottom: "32px",
                 }}
               >
-                Coming soon
-              </p>
+                {/* Left Column - Attack Coverage */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div>
+                    <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#e5e7eb", margin: 0, marginBottom: "4px" }}>
+                      Attack coverage
+                    </h3>
+                    <p style={{ fontSize: "12px", color: "#9ca9cb", margin: 0 }}>
+                      Choose which attacks are actively monitored by the IDS pipeline.
+                    </p>
+                  </div>
+
+                  {/* Attack Toggle Cards */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {attackToggles.map((attack) => (
+                      <div
+                        key={attack.key}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: "12px",
+                          padding: "14px 16px",
+                          background: "rgba(15, 23, 42, 0.7)",
+                          borderRadius: "10px",
+                          border: "1px solid rgba(148, 163, 184, 0.15)",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "14px", fontWeight: 600, color: "#e5e7eb", marginBottom: "4px" }}>
+                            {attack.label}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#9ca9cb", lineHeight: "1.4" }}>
+                            {attack.description}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => toggleAttackEnabled(attack.key)}
+                          style={{
+                            minWidth: "48px",
+                            padding: "4px",
+                            borderRadius: "999px",
+                            background: attack.enabled ? "rgba(34, 197, 94, 0.2)" : "rgba(148, 163, 184, 0.15)",
+                            border: attack.enabled ? "1px solid #22c55e" : "1px solid rgba(148, 163, 184, 0.4)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: attack.enabled ? "flex-end" : "flex-start",
+                            transition: "all 0.2s ease",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: "18px",
+                              height: "18px",
+                              borderRadius: "999px",
+                              background: attack.enabled ? "#22c55e" : "#64748b",
+                              transition: "all 0.2s ease",
+                            }}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right Column - Thresholds & Auto-handling */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* Detection Sensitivity */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div>
+                      <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#e5e7eb", margin: 0, marginBottom: "4px" }}>
+                        Detection sensitivity
+                      </h3>
+                      <p style={{ fontSize: "12px", color: "#9ca9cb", margin: 0 }}>
+                        Controls how aggressive the model is when flagging anomalies (higher = more alerts).
+                      </p>
+                    </div>
+
+                    <div style={{ padding: "16px", background: "rgba(15, 23, 42, 0.7)", borderRadius: "10px", border: "1px solid rgba(148, 163, 184, 0.15)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <span style={{ fontSize: "13px", color: "#9ca9cb" }}>Sensitivity level</span>
+                        <span style={{ fontSize: "14px", fontWeight: 600, color: "#e5e7eb" }}>
+                          {detectionSensitivity} / 100 <span style={{ color: "#9ca9cb", fontWeight: 400 }}>({getSensitivityLabel(detectionSensitivity)})</span>
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={detectionSensitivity}
+                        onChange={(e) => setDetectionSensitivity(Number(e.target.value))}
+                        style={{
+                          width: "100%",
+                          height: "6px",
+                          borderRadius: "3px",
+                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${detectionSensitivity}%, rgba(148, 163, 184, 0.2) ${detectionSensitivity}%, rgba(148, 163, 184, 0.2) 100%)`,
+                          outline: "none",
+                          cursor: "pointer",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Alert Routing */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div>
+                      <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#e5e7eb", margin: 0, marginBottom: "4px" }}>
+                        Alert routing
+                      </h3>
+                      <p style={{ fontSize: "12px", color: "#9ca9cb", margin: 0 }}>
+                        Control which severities are raised to the dashboard and how low-risk alerts are handled.
+                      </p>
+                    </div>
+
+                    <div style={{ padding: "16px", background: "rgba(15, 23, 42, 0.7)", borderRadius: "10px", border: "1px solid rgba(148, 163, 184, 0.15)", display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {/* Minimum Severity */}
+                      <div>
+                        <label style={{ fontSize: "13px", fontWeight: 600, color: "#e5e7eb", display: "block", marginBottom: "8px" }}>
+                          Minimum severity for dashboard alerts
+                        </label>
+                        <div style={{ display: "flex", gap: "8px", padding: "4px", background: "rgba(15, 23, 42, 0.6)", borderRadius: "8px", border: "1px solid rgba(148, 163, 184, 0.2)" }}>
+                          {(["low", "medium", "high"] as const).map((severity) => (
+                            <button
+                              key={severity}
+                              onClick={() => setMinSeverityForAlert(severity)}
+                              style={{
+                                flex: 1,
+                                padding: "8px 12px",
+                                background: minSeverityForAlert === severity ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                border: minSeverityForAlert === severity ? "1px solid #60a5fa" : "1px solid transparent",
+                                borderRadius: "6px",
+                                color: minSeverityForAlert === severity ? "#60a5fa" : "#9ca9cb",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {severity === "low" ? "Low and above" : severity === "medium" ? "Medium and above" : "High only"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Auto-close Toggle */}
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <div>
+                            <label style={{ fontSize: "13px", fontWeight: 600, color: "#e5e7eb", display: "block" }}>
+                              Auto-close low severity alerts
+                            </label>
+                            <p style={{ fontSize: "11px", color: "#9ca9cb", margin: 0, marginTop: "2px" }}>
+                              Automatically close low severity alerts that remain unchanged.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setAutoCloseLowSeverity(!autoCloseLowSeverity)}
+                            style={{
+                              minWidth: "48px",
+                              padding: "4px",
+                              borderRadius: "999px",
+                              background: autoCloseLowSeverity ? "rgba(34, 197, 94, 0.2)" : "rgba(148, 163, 184, 0.15)",
+                              border: autoCloseLowSeverity ? "1px solid #22c55e" : "1px solid rgba(148, 163, 184, 0.4)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: autoCloseLowSeverity ? "flex-end" : "flex-start",
+                              transition: "all 0.2s ease",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: "18px",
+                                height: "18px",
+                                borderRadius: "999px",
+                                background: autoCloseLowSeverity ? "#22c55e" : "#64748b",
+                                transition: "all 0.2s ease",
+                              }}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Auto-close Hours Input */}
+                        {autoCloseLowSeverity && (
+                          <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                            <label style={{ fontSize: "12px", color: "#9ca9cb", display: "block", marginBottom: "6px" }}>
+                              Auto-close after (hours)
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="168"
+                              value={autoCloseHours}
+                              onChange={(e) => setAutoCloseHours(Number(e.target.value))}
+                              style={{
+                                width: "100%",
+                                padding: "8px 12px",
+                                background: "rgba(15, 23, 42, 0.6)",
+                                border: "1px solid rgba(148, 163, 184, 0.2)",
+                                borderRadius: "6px",
+                                color: "#e5e7eb",
+                                fontSize: "13px",
+                                outline: "none",
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "16px", borderTop: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                <button
+                  onClick={handleSaveSettings}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "10px 20px",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(59, 130, 246, 0.3)";
+                  }}
+                >
+                  <Save size={16} />
+                  <span>Save changes</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
