@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../index.css";
 
 import AuthCardLayout from "../components/layout/AuthCardLayout.jsx";
@@ -9,6 +10,7 @@ import CheckboxWithText from "../components/form/CheckboxWithText.jsx";
 import PasswordStrengthBar from "../components/feedback/PasswordStrengthBar.jsx";
 import MatchLabel from "../components/feedback/MatchLabel.jsx";
 import PrimaryButton from "../components/buttons/PrimaryButton.jsx";
+import authService from "../utils/authService.js";
 
 function getPasswordScore(password) {
   let score = 0;
@@ -27,6 +29,9 @@ function SignUpPage() {
     confirmPassword: "",
     accepted: false,
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const passwordScore = useMemo(
     () => getPasswordScore(form.password),
@@ -44,14 +49,34 @@ function SignUpPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    // Clear error when user starts typing
+    if (error) setError("");
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    console.log("Create AEGIS account:", form);
+    setError("");
+    setLoading(true);
+
+    try {
+      const result = await authService.register(form.email, form.password);
+      
+      if (result.success) {
+        // Registration successful, redirect to dashboard
+        navigate("/dashboard");
+      } else {
+        // Registration failed, show error
+        setError(result.error || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Registration error:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const submitDisabled = !form.accepted || passwordsMatch !== true;
+  const submitDisabled = !form.accepted || passwordsMatch !== true || loading;
 
   const mailIcon = (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -77,6 +102,19 @@ function SignUpPage() {
       subtitle="Access our enterprise security dashboard, alerts & advisory tools."
     >
       <form className="aegis-auth-form" onSubmit={handleSubmit}>
+        {error && (
+          <div style={{
+            padding: "12px",
+            marginBottom: "16px",
+            backgroundColor: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            borderRadius: "8px",
+            color: "#ef4444",
+            fontSize: "14px"
+          }}>
+            {error}
+          </div>
+        )}
         <FormField label="Name">
           <TextInput
             name="name"
@@ -150,7 +188,7 @@ function SignUpPage() {
           disabled={submitDisabled}
           showArrow={true}
         >
-          Create Account
+          {loading ? "Creating Account..." : "Create Account"}
         </PrimaryButton>
       </form>
     </AuthCardLayout>

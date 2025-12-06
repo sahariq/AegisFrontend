@@ -8,29 +8,52 @@ import FormField from "../components/form/FormField.jsx";
 import TextInput from "../components/form/TextInput.jsx";
 import PasswordInput from "../components/form/PasswordInput.jsx";
 import PrimaryButton from "../components/buttons/PrimaryButton.jsx";
+import authService from "../utils/authService.js";
 
 function LoginPage() {
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (error) setError("");
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    navigate("/dashboard");
+    setError("");
+    setLoading(true);
+
+    try {
+      const result = await authService.login(form.email, form.password);
+      
+      if (result.success) {
+        // Login successful, redirect to dashboard
+        navigate("/dashboard");
+      } else {
+        // Login failed, show error
+        setError(result.error || "Login failed. Please try again.");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Login error:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const mailIcon = <Mail size={18} aria-hidden="true" />;
 
   const lockIcon = <LockKeyhole size={18} aria-hidden="true" />;
 
-  const canSubmit = form.email.trim() !== "" && form.password.trim() !== "";
+  const canSubmit = form.email.trim() !== "" && form.password.trim() !== "" && !loading;
 
   return (
     <AuthCardLayout
@@ -38,6 +61,19 @@ function LoginPage() {
       subtitle="Log in to access your dashboard"
     >
       <form className="aegis-auth-form" onSubmit={handleSubmit}>
+        {error && (
+          <div style={{
+            padding: "12px",
+            marginBottom: "16px",
+            backgroundColor: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            borderRadius: "8px",
+            color: "#ef4444",
+            fontSize: "14px"
+          }}>
+            {error}
+          </div>
+        )}
         <FormField label="Email address">
           <TextInput
             type="email"
@@ -70,7 +106,7 @@ function LoginPage() {
         </FormField>
 
         <PrimaryButton type="submit" disabled={!canSubmit}>
-          Sign In
+          {loading ? "Signing in..." : "Sign In"}
         </PrimaryButton>
 
         <div className="aegis-login-footer">
@@ -78,7 +114,7 @@ function LoginPage() {
           <button
             type="button"
             className="aegis-link"
-            onClick={() => console.log("Go to signup")}
+            onClick={() => navigate("/signup")}
           >
             Create one
           </button>

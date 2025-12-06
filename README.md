@@ -4,6 +4,13 @@ A modern, responsive security dashboard for the Aegis Intrusion Detection System
 
 ## Features
 
+### 🔐 Authentication
+- **Real User Authentication**: MongoDB-backed user registration and login
+- **Secure Password Storage**: Bcrypt hashing with 12 salt rounds
+- **JWT Tokens**: 7-day expiration with Bearer token authentication
+- **Protected Routes**: Dashboard access requires valid authentication
+- **User Management**: Logout functionality and session handling
+
 ### 🎯 Core Functionality
 - **Real-time Threat Detection**: Live monitoring of 5 SME-critical cyberattacks
   - SYN Flood
@@ -45,7 +52,12 @@ A modern, responsive security dashboard for the Aegis Intrusion Detection System
 
 ### Prerequisites
 - Node.js 16+ and npm
+- MongoDB (local or Atlas) - **Required for authentication**
 - Aegis Backend API (optional - falls back to mock data)
+
+### Quick Start
+
+**For complete setup with authentication, see [QUICKSTART.md](../QUICKSTART.md) in the root directory.**
 
 ### Installation
 
@@ -54,31 +66,53 @@ A modern, responsive security dashboard for the Aegis Intrusion Detection System
    npm install
    ```
 
-2. **Configure API (Optional)**
+2. **Configure API**
    
-   Copy `.env.example` to `.env.local`:
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Update `VITE_AEGIS_API_BASE_URL` if your backend is running on a different host/port:
+   The `.env.local` file should already contain:
    ```env
    VITE_AEGIS_API_BASE_URL=http://localhost:8000
    ```
    
-   **Note**: If the API is unavailable, the dashboard automatically falls back to mock data for development.
+   This points to the authentication backend. Make sure the auth backend is running (see below).
 
-3. **Start development server**
+3. **Start the auth backend** (Required)
+   
+   In a separate terminal:
+   ```bash
+   cd ../auth-backend
+   npm install
+   npm run dev
+   ```
+   
+   See [auth-backend/README.md](../auth-backend/README.md) for detailed backend setup.
+
+4. **Start development server**
    ```bash
    npm run dev
    ```
    
    The application will be available at `http://localhost:5173`
 
-4. **Build for production**
+5. **Create an account**
+   - Navigate to http://localhost:5173
+   - Click "Create one" to register
+   - Login with your credentials
+
+6. **Build for production**
    ```bash
    npm run build
    ```
+
+### Authentication
+
+The dashboard now uses **real authentication** with MongoDB:
+- User registration with email/password
+- Secure password hashing (bcrypt)
+- JWT-based authentication
+- Protected routes
+- Logout functionality
+
+**No more dummy login!** You must create an account to access the dashboard.
 
 ## Project Structure
 

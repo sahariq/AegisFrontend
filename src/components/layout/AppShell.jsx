@@ -8,8 +8,10 @@ import {
   Settings,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import aegisLogo from "../../assets/aegis-logo.png";
+import authService from "../../utils/authService.js";
 import "../../index.css";
 
 const NAV_ITEMS = [
@@ -24,6 +26,18 @@ function AppShell({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Get user info on mount
+  useEffect(() => {
+    const currentUser = authService.getUser();
+    setUser(currentUser);
+  }, []);
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate("/login");
+  };
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -109,12 +123,46 @@ function AppShell({ children }) {
 
         <div className="aegis-sidebar-footer">
           <div className="aegis-user-pill">
-            <div className="aegis-user-avatar">S</div>
+            <div className="aegis-user-avatar">
+              {user?.email?.[0]?.toUpperCase() || "U"}
+            </div>
             <div className="aegis-user-meta">
-              <div className="aegis-user-name">Sahar Iqbal</div>
-              <div className="aegis-user-role">Security Lead</div>
+              <div className="aegis-user-name">{user?.email || "User"}</div>
+              <div className="aegis-user-role">Security Analyst</div>
             </div>
           </div>
+          <button
+            type="button"
+            className="aegis-logout-btn"
+            onClick={handleLogout}
+            aria-label="Logout"
+            title="Logout"
+            style={{
+              marginTop: "8px",
+              width: "100%",
+              padding: "8px 12px",
+              background: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "6px",
+              color: "#ef4444",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              fontSize: "14px",
+              transition: "all 0.2s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+            }}
+          >
+            <LogOut size={16} />
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 
