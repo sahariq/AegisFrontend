@@ -16,8 +16,13 @@ export function getSeverityColor(severity: string): {
   const sev = severity.toLowerCase();
   
   switch (sev) {
-    case 'high':
     case 'critical':
+      return {
+        bg: 'rgba(220, 38, 38, 0.15)',
+        color: '#fca5a5',
+        border: 'rgba(220, 38, 38, 0.9)',
+      };
+    case 'high':
       return {
         bg: 'rgba(239, 68, 68, 0.15)',
         color: '#f87171',

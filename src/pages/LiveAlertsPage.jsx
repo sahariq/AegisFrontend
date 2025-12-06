@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import "../index.css";
-import { AlertTriangle, RefreshCcw, Search } from "lucide-react";
-import { fetchAlerts } from "../api/aegisClient.ts";
+import { AlertTriangle, RefreshCcw, Search, RotateCw, Circle, Wifi, WifiOff, Skull } from "lucide-react";
+import { fetchAlerts, checkHealth } from "../api/aegisClient.ts";
 import AlertFrequencyChart from "../components/charts/AlertFrequencyChart.tsx";
 import { ErrorAlert } from "../components/common";
+import { useWebSocketAlerts } from "../hooks/useWebSocketAlerts.ts";
+import { AlertToast } from "../components/alerts/AlertToast.tsx";
 
 function LiveAlertsPage() {
   const [alerts, setAlerts] = useState([]);
@@ -13,6 +15,36 @@ function LiveAlertsPage() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [attackTypeFilter, setAttackTypeFilter] = useState("all");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [healthStatus, setHealthStatus] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [useWebSocket, setUseWebSocket] = useState(true);
+  const [toastAlert, setToastAlert] = useState(null);
+
+  // WebSocket integration for real-time alerts
+  const handleNewAlert = useCallback((newAlert) => {
+    console.log('[LiveAlerts] New alert from WebSocket:', newAlert);
+    setAlerts((prev) => {
+      // Add new alert to the top, remove duplicates
+      const filtered = prev.filter(a => a.id !== newAlert.id);
+      return [newAlert, ...filtered].slice(0, 100); // Keep max 100 alerts
+    });
+    
+    // Show toast notification
+    setToastAlert(newAlert);
+  }, []);
+
+  const {
+    isConnected: wsConnected,
+    lastAlert: wsLastAlert,
+    error: wsError,
+    reconnectAttempts,
+  } = useWebSocketAlerts({
+    enabled: useWebSocket && autoRefresh,
+    onAlert: handleNewAlert,
+    onError: (err) => {
+      console.error('[LiveAlerts] WebSocket error:', err);
+    },
+  });
 
   async function loadAlerts({ silent = false } = {}) {
     try {
@@ -34,8 +66,12 @@ function LiveAlertsPage() {
           params.attack_type = attackTypeFilter;
         }
 
-        const response = await fetchAlerts(params);
+        const [response, healthData] = await Promise.all([
+          fetchAlerts(params),
+          checkHealth().catch(() => null)
+        ]);
         setAlerts(response.alerts);
+        setHealthStatus(healthData);
       } catch (apiErr) {
         // Fall back to mock data
         const { generateRecentAlerts } = await import("../utils/mockDataGenerator.ts");
@@ -49,6 +85,34 @@ function LiveAlertsPage() {
       setLoading(false);
     }
   }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadAlerts();
+    setIsRefreshing(false);
+  };
+
+  // Determine IDS status
+  const getIDSStatus = () => {
+    if (loading && !healthStatus) {
+      return { status: 'loading', label: 'Checking' };
+    }
+    if (error || !healthStatus) {
+      return { status: 'error', label: 'Error' };
+    }
+    if (healthStatus.status === 'healthy' || healthStatus.status === 'ok') {
+      return { status: 'healthy', label: 'Healthy' };
+    }
+    if (healthStatus.status === 'degraded' || healthStatus.status === 'warning') {
+      return { status: 'warning', label: 'Warning' };
+    }
+    return { status: 'error', label: 'Error' };
+  };
+
+  const idsStatus = getIDSStatus();
+  // Check backend mode
+  const backendMode = healthStatus?.mode || (healthStatus?.components?.database);
+  const environmentLabel = (backendMode === 'demo' || backendMode === 'static') ? 'Demo' : 'Production';
 
   useEffect(() => {
     loadAlerts();
@@ -108,33 +172,100 @@ function LiveAlertsPage() {
   }, [alerts]);
 
   return (
-    <div className="aegis-page">
-      <header className="aegis-dash-header">
+    <>
+      {/* Toast notification for new alerts */}
+      {toastAlert && (
+        <AlertToast
+          alert={toastAlert}
+          onClose={() => setToastAlert(null)}
+          duration={4000}
+        />
+      )}
+
+      <div className="aegis-page">
+        <header className="aegis-dash-header">
         <div>
           <h1 className="aegis-dash-title">Live Alerts</h1>
           <p className="aegis-dash-subtitle">
             Stream of most recent alerts from the Aegis IDS API.
           </p>
         </div>
-        <div className="aegis-dash-header-actions">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.85rem" }}>
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-              />
-              Auto-refresh (5s)
-            </label>
+        <div className="ids-header-right-new">
+          {/* WebSocket Toggle */}
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", color: "#9ca3af" }}>
+            <input
+              type="checkbox"
+              checked={useWebSocket}
+              onChange={(e) => setUseWebSocket(e.target.checked)}
+            />
+            WebSocket
+          </label>
+
+          {/* WebSocket Status Indicator */}
+          {useWebSocket && (
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.5rem", 
+              fontSize: "0.75rem",
+              color: wsConnected ? "#4ade80" : "#fb7185"
+            }}>
+              {wsConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+              <span>{wsConnected ? 'Live' : reconnectAttempts > 0 ? `Reconnecting (${reconnectAttempts})` : 'Disconnected'}</span>
+            </div>
+          )}
+
+          {/* Polling Toggle */}
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", color: "#9ca3af" }}>
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+            />
+            Polling (5s)
+          </label>
+
+          {/* Status pill */}
+          <div className={`ids-status-pill-neon ids-status-pill-neon--${
+            idsStatus.status === 'error' ? 'error' : 
+            idsStatus.status === 'warning' ? 'warning' : 
+            'healthy'
+          }`}>
+            <Circle
+              className={`ids-status-dot-icon ${
+                idsStatus.status === 'error' ? 'ids-status-dot-icon--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-dot-icon--warning' : 
+                'ids-status-dot-icon--healthy'
+              }`}
+              fill="currentColor"
+            />
+            <span className="ids-status-text">
+              Env: <span className="ids-status-value">{environmentLabel}</span>
+            </span>
+            <span className="ids-status-separator">•</span>
+            <span className="ids-status-text">
+              IDS: <span className={`ids-status-value ${
+                idsStatus.status === 'error' ? 'ids-status-value--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-value--warning' : 
+                'ids-status-value--healthy'
+              }`}>{idsStatus.label}</span>
+            </span>
+          </div>
+
+          {/* Refresh button */}
           <button
             type="button"
-            className="aegis-advisory-btn cursor-hotspot-action"
-            onClick={loadAlerts}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`ids-refresh-btn-neon ids-refresh-btn-neon--${
+              idsStatus.status === 'error' ? 'error' : 
+              idsStatus.status === 'warning' ? 'warning' : 
+              'healthy'
+            }`}
           >
-              <RefreshCcw size={14} />
-              Refresh
-            </button>
-          </div>
+            <RotateCw className={`ids-refresh-icon ${isRefreshing ? 'animate-spin-slow' : ''}`} />
+            <span>Refresh</span>
+          </button>
         </div>
       </header>
 
@@ -255,6 +386,7 @@ function LiveAlertsPage() {
                   <span
                     className={`ids-severity-pill ids-severity-${alert.severity}`}
                   >
+                    {alert.severity === "critical" && <Skull className="ids-severity-icon" />}
                     {alert.severity === "high" && <AlertTriangle className="ids-severity-icon" />}
                     {alert.severity === "medium" && <AlertTriangle className="ids-severity-icon" />}
                     {alert.severity === "low" && <AlertTriangle className="ids-severity-icon" />}
@@ -293,6 +425,7 @@ function LiveAlertsPage() {
         <AlertFrequencyChart alerts={alerts} timeWindowSeconds={60} />
       </div>
     </div>
+    </>
   );
 }
 

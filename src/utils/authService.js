@@ -3,7 +3,7 @@
  * Handles login, registration, and token management
  */
 
-const API_BASE_URL = import.meta.env.VITE_AEGIS_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL || 'http://localhost:3001';
 
 class AuthService {
   constructor() {

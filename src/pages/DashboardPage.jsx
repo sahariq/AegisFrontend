@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "../index.css";
 import {
   Bell,
@@ -12,111 +12,191 @@ import {
   Server,
   ShieldHalf,
   Gauge,
+  RefreshCcw,
+  RotateCw,
+  Circle,
+  Sparkles,
 } from "lucide-react";
 import RecentAlertCard from "../components/alerts/RecentAlertCard.jsx";
 import ThreatsDetectedCard from "../components/charts/ThreatsDetectedCard.tsx";
 import { StatCard, StatusPill } from "../components/common";
-import { getMetricsOverview, fetchAlerts } from "../api/aegisClient.ts";
+import { getMetricsOverview, fetchAlerts, checkHealth } from "../api/aegisClient.ts";
 import { 
   generateMonthlyThreats, 
   generateRecentAlerts, 
   generateMetricsOverview,
   ThreatSimulator 
 } from "../utils/mockDataGenerator.ts";
+import { useMockIdsStream } from "../hooks/useMockIdsStream.ts";
 
 function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
   const [recentAlerts, setRecentAlerts] = useState([]);
   const [chartData, setChartData] = useState([]);
+  const [healthStatus, setHealthStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [useMockData, setUseMockData] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [mockStreamEnabled, setMockStreamEnabled] = useState(false);
 
-  // Mock data for second row KPIs
-  const modelHealth = {
+  // Mock data for second row KPIs (will be updated by mock stream)
+  const [modelHealth, setModelHealth] = useState({
     f1Score: 0.79,
     rocAuc: 0.85,
+    precision: 0.82,
+    recall: 0.76,
     status: "stable",
     lastUpdated: "2 days ago",
-  };
+  });
 
-  const agentStatus = {
+  const [agentStatus, setAgentStatus] = useState({
     status: "online",
     lastHeartbeatSeconds: 12,
     cpuUsage: 34,
     memoryUsageGb: 1.2,
     throughputMbps: 4.1,
     agentId: "aegis-edge-01",
-  };
+  });
 
-  const topAttacks = [
-    { name: "SYN Flood", percentage: 43 },
-    { name: "MITM ARP", percentage: 27 },
-    { name: "DNS Exfiltration", percentage: 18 },
-  ];
-
-  const riskScore = {
+  const [riskScore, setRiskScore] = useState({
     score: 62,
     level: "moderate",
     inputsSummary: "50 active alerts · 3 exposed services · 2 high-severity findings",
-  };
+  });
 
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        setLoading(true);
-        setError(null);
+  // Calculate top attacks from metrics
+  const topAttacks = useMemo(() => {
+    if (!metrics?.attack_counts) {
+      return [
+        { name: "SYN Flood", percentage: 43 },
+        { name: "MITM ARP", percentage: 27 },
+        { name: "DNS Exfiltration", percentage: 18 },
+      ];
+    }
+    
+    const total = Object.values(metrics.attack_counts).reduce((a, b) => a + b, 0);
+    if (total === 0) return [];
+    
+    return Object.entries(metrics.attack_counts)
+      .map(([name, count]) => ({
+        name: name.replace(/_/g, ' '),
+        percentage: Math.round((count / total) * 100),
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 3);
+  }, [metrics]);
 
-        try {
-          // Try to fetch real data from API
-          const [metricsData, alertsData] = await Promise.all([
-            getMetricsOverview(),
-            fetchAlerts({ page: 1, page_size: 4, status: 'new' })
-          ]);
-
-          setMetrics(metricsData);
-          setRecentAlerts(alertsData.alerts);
-
-          // Process alerts data for chart - group by date and severity
-          const alertsByDate = {};
-          alertsData.alerts.forEach(alert => {
-            const date = new Date(alert.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            if (!alertsByDate[date]) {
-              alertsByDate[date] = { date, high: 0, medium: 0, low: 0 };
-            }
-            const severity = alert.severity.toLowerCase();
-            if (severity === 'high' || severity === 'critical') {
-              alertsByDate[date].high++;
-            } else if (severity === 'medium') {
-              alertsByDate[date].medium++;
-            } else {
-              alertsByDate[date].low++;
-            }
-          });
-
-          setChartData(Object.values(alertsByDate));
-          setUseMockData(false);
-        } catch (apiError) {
-          // If API fails, use mock data
-          setUseMockData(true);
-          
-          // Generate mock data
-          const mockMetrics = generateMetricsOverview();
-          const mockAlerts = generateRecentAlerts(4);
-          const mockChartData = generateMonthlyThreats();
-          
-          setMetrics(mockMetrics);
-          setRecentAlerts(mockAlerts);
-          setChartData(mockChartData);
-        }
-      } catch (err) {
-        setError(err.message);
-        console.error('Failed to load dashboard data:', err);
-      } finally {
-        setLoading(false);
-      }
+  const loadDashboardData = useCallback(async () => {
+    // Skip API calls if mock stream is enabled
+    if (mockStreamEnabled) {
+      console.log('[Dashboard] Skipping API call - mock stream is active');
+      return;
     }
 
+    try {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Try to fetch real data from API
+        const [metricsData, alertsData, healthData] = await Promise.all([
+          getMetricsOverview(),
+          fetchAlerts({ page: 1, page_size: 4, status: 'new' }),
+          checkHealth().catch(() => null),
+        ]);
+
+        setMetrics(metricsData);
+        setRecentAlerts(alertsData.alerts);
+        setHealthStatus(healthData);
+
+        // Process alerts data for chart - group by date and severity
+        const alertsByDate = {};
+        alertsData.alerts.forEach(alert => {
+          const date = new Date(alert.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          if (!alertsByDate[date]) {
+            alertsByDate[date] = { date, high: 0, medium: 0, low: 0 };
+          }
+          const severity = alert.severity.toLowerCase();
+          if (severity === 'high' || severity === 'critical') {
+            alertsByDate[date].high++;
+          } else if (severity === 'medium') {
+            alertsByDate[date].medium++;
+          } else {
+            alertsByDate[date].low++;
+          }
+        });
+
+        setChartData(Object.values(alertsByDate));
+        setUseMockData(false);
+      } catch (apiError) {
+        // If API fails, use mock data
+        setUseMockData(true);
+        
+        // Generate mock data
+        const mockMetrics = generateMetricsOverview();
+        const mockAlerts = generateRecentAlerts(4);
+        const mockChartData = generateMonthlyThreats();
+        
+        setMetrics(mockMetrics);
+        setRecentAlerts(mockAlerts);
+        setChartData(mockChartData);
+      }
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [mockStreamEnabled]);
+
+  const handleDashboardRefresh = async () => {
+    setIsRefreshing(true);
+    await loadDashboardData();
+    setIsRefreshing(false);
+  };
+
+  const handleToggleMockStream = useCallback(() => {
+    const newState = !mockStreamEnabled;
+    setMockStreamEnabled(newState);
+    console.log('[Mock Stream] Toggled:', newState);
+    
+    // When turning off mock stream, trigger a real refresh
+    if (!newState) {
+      console.log('[Mock Stream] Disabled - triggering real data refresh');
+      setTimeout(() => {
+        loadDashboardData();
+      }, 100);
+    }
+  }, [mockStreamEnabled, loadDashboardData]);
+
+  // Mock stream hook - updates data when enabled
+  const mockStreamCallbacks = useMemo(() => ({
+    onMetricsUpdate: (newMetrics) => {
+      setMetrics(newMetrics);
+      setUseMockData(true);
+    },
+    onNewAlert: (newAlert) => {
+      setRecentAlerts(prev => [newAlert, ...prev.slice(0, 3)]);
+    },
+    onModelHealthUpdate: (health) => {
+      setModelHealth(health);
+    },
+    onAgentStatusUpdate: (status) => {
+      setAgentStatus(status);
+    },
+    onRiskScoreUpdate: (risk) => {
+      setRiskScore(risk);
+    },
+  }), []);
+
+  useMockIdsStream({
+    enabled: mockStreamEnabled,
+    intervalMs: 4000,
+    callbacks: mockStreamCallbacks,
+  });
+
+  useEffect(() => {
     loadDashboardData();
 
     // Set up real-time threat simulator
@@ -133,6 +213,32 @@ function DashboardPage() {
     };
   }, []);
 
+  // Determine IDS status
+  const getIDSStatus = () => {
+    if (loading && !healthStatus) {
+      return { status: 'loading', label: 'Checking' };
+    }
+    if (error || !healthStatus) {
+      return { status: 'error', label: 'Error' };
+    }
+    if (healthStatus.status === 'healthy' || healthStatus.status === 'ok') {
+      return { status: 'healthy', label: 'Healthy' };
+    }
+    if (healthStatus.status === 'degraded' || healthStatus.status === 'warning') {
+      return { status: 'warning', label: 'Warning' };
+    }
+    return { status: 'error', label: 'Error' };
+  };
+
+  const idsStatus = mockStreamEnabled 
+    ? { status: 'warning', label: 'Mocking' }
+    : getIDSStatus();
+  // Check if backend is in demo/static mode or production
+  const backendMode = healthStatus?.mode || (healthStatus?.components?.database);
+  const environmentLabel = mockStreamEnabled
+    ? 'Demo • Mock Stream'
+    : (backendMode === 'demo' || backendMode === 'static' || useMockData) ? 'Demo' : 'Production';
+
   return (
     <div className="aegis-page">
       <header className="aegis-dash-header">
@@ -142,16 +248,61 @@ function DashboardPage() {
             Your SME security overview and system activity summary.
           </p>
         </div>
-        <div className="aegis-dash-header-actions">
-          <div className="aegis-env-pill">
-            <span className="aegis-env-dot" />
-            <span>Environment: {useMockData ? 'Demo (Mock Data)' : 'Production'} · IDS {loading ? 'Loading...' : error ? 'Error' : 'Healthy'}</span>
+        <div className="ids-header-right-new">
+          {/* Status pill */}
+          <div className={`ids-status-pill-neon ids-status-pill-neon--${
+            idsStatus.status === 'error' ? 'error' : 
+            idsStatus.status === 'warning' ? 'warning' : 
+            'healthy'
+          }`}>
+            <Circle
+              className={`ids-status-dot-icon ${
+                idsStatus.status === 'error' ? 'ids-status-dot-icon--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-dot-icon--warning' : 
+                'ids-status-dot-icon--healthy'
+              }`}
+              fill="currentColor"
+            />
+            <span className="ids-status-text">
+              Env: <span className="ids-status-value">{environmentLabel}</span>
+            </span>
+            <span className="ids-status-separator">•</span>
+            <span className="ids-status-text">
+              IDS: <span className={`ids-status-value ${
+                idsStatus.status === 'error' ? 'ids-status-value--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-value--warning' : 
+                'ids-status-value--healthy'
+              }`}>{idsStatus.label}</span>
+            </span>
           </div>
-          <button className="aegis-header-icon-btn" aria-label="Notifications">
-            <Bell size={18} aria-hidden="true" />
+
+          {/* Mock Stream button */}
+          <button
+            type="button"
+            onClick={handleToggleMockStream}
+            className={`ids-mock-stream-btn ${
+              mockStreamEnabled ? 'ids-mock-stream-btn--on' : 'ids-mock-stream-btn--off'
+            }`}
+          >
+            <Sparkles className={`ids-mock-stream-icon ${
+              mockStreamEnabled ? 'ids-mock-stream-icon--pulsing' : ''
+            }`} />
+            <span>Mock Stream</span>
           </button>
-          <button className="aegis-header-icon-btn" aria-label="Account">
-            <UserRound size={18} aria-hidden="true" />
+
+          {/* Refresh button */}
+          <button
+            type="button"
+            onClick={handleDashboardRefresh}
+            disabled={isRefreshing}
+            className={`ids-refresh-btn-neon ids-refresh-btn-neon--${
+              idsStatus.status === 'error' ? 'error' : 
+              idsStatus.status === 'warning' ? 'warning' : 
+              'healthy'
+            }`}
+          >
+            <RotateCw className={`ids-refresh-icon ${isRefreshing ? 'animate-spin-slow' : ''}`} />
+            <span>Refresh</span>
           </button>
         </div>
       </header>

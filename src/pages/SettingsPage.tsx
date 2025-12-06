@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../index.css";
 import "./SettingsPage.css";
-import { Settings, Bell, Zap, Plug2, Save } from "lucide-react";
+import { Settings, Bell, Zap, Plug2, Save, Circle } from "lucide-react";
+import { checkHealth } from "../api/aegisClient";
 
 type TabType = "general" | "alerts" | "notifications" | "integrations";
 
@@ -16,6 +17,8 @@ type AttackToggle = {
 
 function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("general");
+  const [healthStatus, setHealthStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   // General settings state
   const [organizationName, setOrganizationName] = useState("Acme Security Labs");
@@ -58,7 +61,7 @@ function SettingsPage() {
   ]);
 
   const [detectionSensitivity, setDetectionSensitivity] = useState<number>(70);
-  const [minSeverityForAlert, setMinSeverityForAlert] = useState<"low" | "medium" | "high">("low");
+  const [minSeverityForAlert, setMinSeverityForAlert] = useState<"low" | "medium" | "high" | "critical">("low");
   const [autoCloseLowSeverity, setAutoCloseLowSeverity] = useState<boolean>(false);
   const [autoCloseHours, setAutoCloseHours] = useState<number>(24);
 
@@ -71,7 +74,7 @@ function SettingsPage() {
   const [genericWebhookEnabled, setGenericWebhookEnabled] = useState<boolean>(false);
   const [genericWebhookUrl, setGenericWebhookUrl] = useState<string>("");
   const [summaryFrequency, setSummaryFrequency] = useState<"none" | "daily" | "weekly">("daily");
-  const [minSeverityForNotification, setMinSeverityForNotification] = useState<"low" | "medium" | "high">("medium");
+  const [minSeverityForNotification, setMinSeverityForNotification] = useState<"low" | "medium" | "high" | "critical">("medium");
 
   // Integrations settings state
   const [apiKey, setApiKey] = useState<string>("");
@@ -167,6 +170,40 @@ function SettingsPage() {
     { id: "integrations" as TabType, label: "Integrations", icon: Plug2 },
   ];
 
+  useEffect(() => {
+    const loadHealth = async () => {
+      try {
+        const healthData = await checkHealth();
+        setHealthStatus(healthData);
+      } catch (err) {
+        console.error('Failed to load health status:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadHealth();
+  }, []);
+
+  // Determine IDS status
+  const getIDSStatus = () => {
+    if (loading && !healthStatus) {
+      return { status: 'loading', label: 'Checking' };
+    }
+    if (!healthStatus) {
+      return { status: 'error', label: 'Error' };
+    }
+    if (healthStatus.status === 'healthy' || healthStatus.status === 'ok') {
+      return { status: 'healthy', label: 'Healthy' };
+    }
+    if (healthStatus.status === 'degraded' || healthStatus.status === 'warning') {
+      return { status: 'warning', label: 'Warning' };
+    }
+    return { status: 'error', label: 'Error' };
+  };
+
+  const idsStatus = getIDSStatus();
+  const environmentLabel = environment === 'live' ? 'Production' : 'Demo';
+
   return (
     <div className="aegis-page">
       <header className="aegis-dash-header">
@@ -176,10 +213,32 @@ function SettingsPage() {
             Configure your Aegis environment, alerts, and integrations.
           </p>
         </div>
-        <div className="aegis-dash-header-actions">
-          <div className="aegis-env-pill">
-            <span className="aegis-env-dot" />
-            <span>Environment: Demo · IDS Healthy</span>
+        <div className="ids-header-right-new">
+          {/* Status pill */}
+          <div className={`ids-status-pill-neon ids-status-pill-neon--${
+            idsStatus.status === 'error' ? 'error' : 
+            idsStatus.status === 'warning' ? 'warning' : 
+            'healthy'
+          }`}>
+            <Circle
+              className={`ids-status-dot-icon ${
+                idsStatus.status === 'error' ? 'ids-status-dot-icon--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-dot-icon--warning' : 
+                'ids-status-dot-icon--healthy'
+              }`}
+              fill="currentColor"
+            />
+            <span className="ids-status-text">
+              Env: <span className="ids-status-value">{environmentLabel}</span>
+            </span>
+            <span className="ids-status-separator">•</span>
+            <span className="ids-status-text">
+              IDS: <span className={`ids-status-value ${
+                idsStatus.status === 'error' ? 'ids-status-value--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-value--warning' : 
+                'ids-status-value--healthy'
+              }`}>{idsStatus.label}</span>
+            </span>
           </div>
         </div>
       </header>
@@ -668,7 +727,7 @@ function SettingsPage() {
                           Minimum severity for dashboard alerts
                         </label>
                         <div style={{ display: "flex", gap: "8px", padding: "4px", background: "rgba(15, 23, 42, 0.6)", borderRadius: "8px", border: "1px solid rgba(148, 163, 184, 0.2)" }}>
-                          {(["low", "medium", "high"] as const).map((severity) => (
+                          {(["low", "medium", "high", "critical"] as const).map((severity) => (
                             <button
                               key={severity}
                               onClick={() => setMinSeverityForAlert(severity)}
@@ -686,7 +745,7 @@ function SettingsPage() {
                                 textTransform: "capitalize",
                               }}
                             >
-                              {severity === "low" ? "Low and above" : severity === "medium" ? "Medium and above" : "High only"}
+                              {severity === "low" ? "Low+" : severity === "medium" ? "Med+" : severity === "high" ? "High+" : "Crit"}
                             </button>
                           ))}
                         </div>
@@ -972,7 +1031,7 @@ function SettingsPage() {
                       </p>
                     </div>
                     <div style={{ display: "flex", gap: "8px", padding: "4px", background: "rgba(15, 23, 42, 0.6)", borderRadius: "8px", border: "1px solid rgba(148, 163, 184, 0.2)" }}>
-                      {(["low", "medium", "high"] as const).map((severity) => (
+                      {(["low", "medium", "high", "critical"] as const).map((severity) => (
                         <button
                           key={severity}
                           onClick={() => setMinSeverityForNotification(severity)}
@@ -991,7 +1050,7 @@ function SettingsPage() {
                             textTransform: "capitalize",
                           }}
                         >
-                          {severity === "low" ? "Low and above" : severity === "medium" ? "Medium and above" : "High only"}
+                          {severity === "low" ? "Low+" : severity === "medium" ? "Med+" : severity === "high" ? "High+" : "Crit"}
                         </button>
                       ))}
                     </div>

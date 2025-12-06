@@ -1,6 +1,6 @@
 // src/pages/IDSPage.jsx
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   RadioTower,
   ChartPie,
@@ -14,6 +14,10 @@ import {
   Network,
   Lightbulb,
   Zap,
+  RefreshCcw,
+  RotateCw,
+  Circle,
+  Sparkles,
 } from "lucide-react";
 
 import "../index.css";
@@ -21,10 +25,12 @@ import {
   getMetricsOverview,
   getSystemStatus,
   fetchAlerts,
-  getExplanation
+  getExplanation,
+  checkHealth
 } from "../api/aegisClient.ts";
 import AlertFrequencyChart from "../components/charts/AlertFrequencyChart.tsx";
 import { SeverityBadge } from "../components/common";
+import { useMockIdsStream } from "../hooks/useMockIdsStream.ts";
 
 // --- Demo data (fallback for when API is unavailable) ----------------------
 
@@ -100,15 +106,18 @@ function IDSPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [mockStreamEnabled, setMockStreamEnabled] = useState(false);
 
   // API state
   const [metrics, setMetrics] = useState(null);
   const [systemStatus, setSystemStatus] = useState(null);
+  const [healthStatus, setHealthStatus] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [alertsPagination, setAlertsPagination] = useState(null);
   const [selectedAlertId, setSelectedAlertId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Explainability state
   const [detectionIdInput, setDetectionIdInput] = useState("");
@@ -119,6 +128,12 @@ function IDSPage() {
   // Load Overview data
   useEffect(() => {
     if (activeTab !== "overview" && activeTab !== "analytics") return;
+    
+    // Skip API calls if mock stream is enabled
+    if (mockStreamEnabled) {
+      console.log('[IDSPage] Skipping API call - mock stream is active');
+      return;
+    }
 
     async function loadOverviewData() {
       try {
@@ -126,13 +141,15 @@ function IDSPage() {
         setError(null);
 
         try {
-          const [metricsData, statusData] = await Promise.all([
+          const [metricsData, statusData, healthData] = await Promise.all([
             getMetricsOverview(),
-            getSystemStatus()
+            getSystemStatus(),
+            checkHealth().catch(() => null)
           ]);
 
           setMetrics(metricsData);
           setSystemStatus(statusData);
+          setHealthStatus(healthData);
         } catch (apiErr) {
           // Fall back to mock data
           const { generateMetricsOverview } = await import("../utils/mockDataGenerator.ts");
@@ -153,11 +170,17 @@ function IDSPage() {
     }
 
     loadOverviewData();
-  }, [activeTab]);
+  }, [activeTab, mockStreamEnabled]);
 
   // Load Live Alerts data
   useEffect(() => {
     if (activeTab !== "live-alerts") return;
+    
+    // Skip API calls if mock stream is enabled
+    if (mockStreamEnabled) {
+      console.log('[IDSPage] Skipping alerts API call - mock stream is active');
+      return;
+    }
 
     async function loadAlerts() {
       try {
@@ -196,7 +219,7 @@ function IDSPage() {
     }
 
     loadAlerts();
-  }, [activeTab, severityFilter]);
+  }, [activeTab, severityFilter, mockStreamEnabled]);
 
   // Polling for Live Alerts
   useEffect(() => {
@@ -248,6 +271,7 @@ function IDSPage() {
   }
 
   const totalAlerts = metrics?.total_alerts || alerts.length || mockAlerts.length;
+  const criticalCount = metrics?.severity_counts?.critical || alerts.filter((a) => a.severity === "critical").length;
   const highCount = metrics?.severity_counts?.high || alerts.filter((a) => a.severity === "high").length;
   const mediumCount = metrics?.severity_counts?.medium || alerts.filter((a) => a.severity === "medium").length;
   const lowCount = metrics?.severity_counts?.low || alerts.filter((a) => a.severity === "low").length;
@@ -275,6 +299,97 @@ function IDSPage() {
     });
   }, [searchTerm, severityFilter, alerts]);
 
+  // Refresh function
+  const handleDashboardRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const [metricsData, statusData, healthData] = await Promise.all([
+        getMetricsOverview(),
+        getSystemStatus(),
+        checkHealth().catch(() => null)
+      ]);
+      setMetrics(metricsData);
+      setSystemStatus(statusData);
+      setHealthStatus(healthData);
+      
+      // Also refresh alerts if on live-alerts tab
+      if (activeTab === "live-alerts") {
+        const response = await fetchAlerts({
+          page: 1,
+          page_size: 20,
+          ...(severityFilter !== "all" && { severity: severityFilter })
+        });
+        setAlerts(response.alerts);
+        setAlertsPagination(response.meta);
+      }
+    } catch (err) {
+      console.error('Refresh failed:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Handle mock stream toggle
+  const handleToggleMockStream = useCallback(() => {
+    const newState = !mockStreamEnabled;
+    setMockStreamEnabled(newState);
+    console.log('[Mock Stream] Toggled:', newState);
+    
+    // When turning off mock stream, trigger a real refresh
+    if (!newState) {
+      console.log('[Mock Stream] Disabled - triggering real data refresh');
+      setTimeout(async () => {
+        await handleDashboardRefresh();
+      }, 100);
+    }
+  }, [mockStreamEnabled]);
+
+  // Mock stream hook - updates data when enabled
+  const mockStreamCallbacks = useMemo(() => ({
+    onMetricsUpdate: (newMetrics) => {
+      setMetrics(newMetrics);
+    },
+    onAlertsUpdate: (newAlerts) => {
+      setAlerts(newAlerts);
+      if (newAlerts.length > 0 && !selectedAlertId) {
+        setSelectedAlertId(newAlerts[0].id);
+      }
+    },
+  }), [selectedAlertId]);
+
+  useMockIdsStream({
+    enabled: mockStreamEnabled,
+    intervalMs: 4000,
+    callbacks: mockStreamCallbacks,
+  });
+
+  // Determine IDS status
+  const getIDSStatus = () => {
+    if (mockStreamEnabled) {
+      return { status: 'warning', label: 'Mocking' };
+    }
+    if (loading && !healthStatus) {
+      return { status: 'loading', label: 'Checking' };
+    }
+    if (error || !healthStatus) {
+      return { status: 'error', label: 'Error' };
+    }
+    if (healthStatus.status === 'healthy' || healthStatus.status === 'ok') {
+      return { status: 'healthy', label: 'Healthy' };
+    }
+    if (healthStatus.status === 'degraded' || healthStatus.status === 'warning') {
+      return { status: 'warning', label: 'Warning' };
+    }
+    return { status: 'error', label: 'Error' };
+  };
+
+  const idsStatus = getIDSStatus();
+  // Check backend mode
+  const backendMode = healthStatus?.mode || (healthStatus?.components?.database);
+  const environmentLabel = mockStreamEnabled 
+    ? 'Demo • Mock Stream' 
+    : (backendMode === 'demo' || backendMode === 'static') ? 'Demo' : 'Production';
+
   return (
     <div className="aegis-page">
       {/* Header */}
@@ -287,19 +402,62 @@ function IDSPage() {
             Live network threat intelligence with explainability and analytics
             for SME networks.
           </p>
-          <div className="ids-last-updated">
-            <span className="ids-status-dot ids-status-dot--pulse" />
-            <span>Updated 32s ago</span>
-          </div>
         </div>
-        <div className="ids-header-right">
-          <div className="ids-status-pill">
-            <span className="ids-status-dot" />
-            IDS Online · Live Mode (Streaming)
+        <div className="ids-header-right-new">
+          {/* Status pill */}
+          <div className={`ids-status-pill-neon ids-status-pill-neon--${
+            idsStatus.status === 'error' ? 'error' : 
+            idsStatus.status === 'warning' ? 'warning' : 
+            'healthy'
+          }`}>
+            <Circle
+              className={`ids-status-dot-icon ${
+                idsStatus.status === 'error' ? 'ids-status-dot-icon--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-dot-icon--warning' : 
+                'ids-status-dot-icon--healthy'
+              }`}
+              fill="currentColor"
+            />
+            <span className="ids-status-text">
+              Env: <span className="ids-status-value">{environmentLabel}</span>
+            </span>
+            <span className="ids-status-separator">•</span>
+            <span className="ids-status-text">
+              IDS: <span className={`ids-status-value ${
+                idsStatus.status === 'error' ? 'ids-status-value--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-value--warning' : 
+                'ids-status-value--healthy'
+              }`}>{idsStatus.label}</span>
+            </span>
           </div>
-          <button className="ids-pentest-btn cursor-hotspot-action">
-            <RadioTower size={16} />
-            Run Pentest
+
+          {/* Mock Stream button */}
+          <button
+            type="button"
+            onClick={handleToggleMockStream}
+            className={`ids-mock-stream-btn ${
+              mockStreamEnabled ? 'ids-mock-stream-btn--on' : 'ids-mock-stream-btn--off'
+            }`}
+          >
+            <Sparkles className={`ids-mock-stream-icon ${
+              mockStreamEnabled ? 'ids-mock-stream-icon--pulsing' : ''
+            }`} />
+            <span>Mock Stream</span>
+          </button>
+
+          {/* Refresh button */}
+          <button
+            type="button"
+            onClick={handleDashboardRefresh}
+            disabled={isRefreshing}
+            className={`ids-refresh-btn-neon ids-refresh-btn-neon--${
+              idsStatus.status === 'error' ? 'error' : 
+              idsStatus.status === 'warning' ? 'warning' : 
+              'healthy'
+            }`}
+          >
+            <RotateCw className={`ids-refresh-icon ${isRefreshing ? 'animate-spin-slow' : ''}`} />
+            <span>Refresh</span>
           </button>
         </div>
       </header>
@@ -385,6 +543,16 @@ function IDSPage() {
                   <div className="ids-kpi-value">{totalAlerts}</div>
                   <div className="ids-kpi-meta">
                     Across all sensors and attack families.
+                  </div>
+                </div>
+                <div className="ids-kpi-card">
+                  <div className="ids-kpi-label">Critical Severity</div>
+                  <div className="ids-kpi-value ids-kpi-value--red">
+                    {criticalCount}
+                  </div>
+                  <SeverityBadge severity="critical" className="ids-kpi-pill" />
+                  <div className="ids-kpi-meta">
+                    Immediate action required - active threat detected.
                   </div>
                 </div>
                 <div className="ids-kpi-card">
@@ -594,6 +762,7 @@ function IDSPage() {
                     className="ids-select"
                   >
                     <option value="all">All severities</option>
+                    <option value="critical">Critical only</option>
                     <option value="high">High only</option>
                     <option value="medium">Medium only</option>
                     <option value="low">Low only</option>

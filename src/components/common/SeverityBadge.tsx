@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, AlertCircle, CheckCircle2, Skull } from 'lucide-react';
 import { getSeverityColor } from '../../utils/severityUtils';
 import '../../index.css';
 
@@ -13,7 +13,8 @@ export function SeverityBadge({ severity, withIcon = true, className = '' }: Sev
   const colors = getSeverityColor(severity);
   const sev = severity.toLowerCase();
   
-  const Icon = sev === 'high' || sev === 'critical' ? AlertTriangle :
+  const Icon = sev === 'critical' ? Skull :
+               sev === 'high' ? AlertTriangle :
                sev === 'medium' ? AlertCircle :
                CheckCircle2;
 

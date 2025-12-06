@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "../index.css";
-import { Activity, Gauge, Server, AlertTriangle, Heart, Shield, Target, TrendingUp, RefreshCcw } from "lucide-react";
+import { Activity, Gauge, Server, AlertTriangle, Heart, Shield, Target, TrendingUp, RefreshCcw, RotateCw, Circle } from "lucide-react";
 import { getMetricsOverview, getSystemStatus, checkHealth } from "../api/aegisClient.ts";
 import { StatCard } from "../components/common";
 
@@ -54,22 +54,24 @@ function OverviewPage() {
   // Determine IDS status
   const getIDSStatus = () => {
     if (loading && !healthStatus) {
-      return { status: 'loading', label: 'Checking...', color: 'bg-slate-500/15 text-slate-300' };
+      return { status: 'loading', label: 'Checking' };
     }
     if (error || !healthStatus) {
-      return { status: 'error', label: 'Error', color: 'bg-rose-500/15 text-rose-300' };
+      return { status: 'error', label: 'Error' };
     }
     if (healthStatus.status === 'healthy' || healthStatus.status === 'ok') {
-      return { status: 'healthy', label: 'Healthy', color: 'bg-emerald-500/15 text-emerald-300' };
+      return { status: 'healthy', label: 'Healthy' };
     }
     if (healthStatus.status === 'degraded' || healthStatus.status === 'warning') {
-      return { status: 'warning', label: 'Degraded', color: 'bg-amber-500/15 text-amber-300' };
+      return { status: 'warning', label: 'Warning' };
     }
-    return { status: 'error', label: 'Error', color: 'bg-rose-500/15 text-rose-300' };
+    return { status: 'error', label: 'Error' };
   };
 
   const idsStatus = getIDSStatus();
-  const environmentLabel = systemStatus?.environment || 'Demo (Mock Data)';
+  // Check backend mode
+  const backendMode = healthStatus?.mode || (healthStatus?.components?.database);
+  const environmentLabel = (backendMode === 'demo' || backendMode === 'static') ? 'Demo' : 'Production';
 
   return (
     <div className="aegis-page">
@@ -80,51 +82,47 @@ function OverviewPage() {
             High-level summary of IDS metrics and system health.
           </p>
         </div>
-        <div className="aegis-dash-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* Environment pill */}
-          <span 
-            className="rounded-full px-3 py-1 text-xs font-medium"
-            style={{
-              backgroundColor: 'rgba(30, 41, 59, 0.8)',
-              color: 'rgb(203, 213, 225)',
-              border: '1px solid rgba(148, 163, 184, 0.2)'
-            }}
-          >
-            Environment: {environmentLabel}
-          </span>
-
-          {/* IDS status pill */}
-          <span 
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${idsStatus.color}`}
-          >
-            IDS Status: {idsStatus.label}
-          </span>
+        <div className="ids-header-right-new">
+          {/* Status pill */}
+          <div className={`ids-status-pill-neon ids-status-pill-neon--${
+            idsStatus.status === 'error' ? 'error' : 
+            idsStatus.status === 'warning' ? 'warning' : 
+            'healthy'
+          }`}>
+            <Circle
+              className={`ids-status-dot-icon ${
+                idsStatus.status === 'error' ? 'ids-status-dot-icon--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-dot-icon--warning' : 
+                'ids-status-dot-icon--healthy'
+              }`}
+              fill="currentColor"
+            />
+            <span className="ids-status-text">
+              Env: <span className="ids-status-value">{environmentLabel}</span>
+            </span>
+            <span className="ids-status-separator">•</span>
+            <span className="ids-status-text">
+              IDS: <span className={`ids-status-value ${
+                idsStatus.status === 'error' ? 'ids-status-value--error' : 
+                idsStatus.status === 'warning' ? 'ids-status-value--warning' : 
+                'ids-status-value--healthy'
+              }`}>{idsStatus.label}</span>
+            </span>
+          </div>
 
           {/* Refresh button */}
           <button
             type="button"
             onClick={handleDashboardRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60"
-            style={{
-              borderColor: 'rgba(148, 163, 184, 0.3)',
-              backgroundColor: 'rgba(15, 23, 42, 0.8)',
-              color: 'rgb(203, 213, 225)',
-            }}
-            onMouseEnter={(e) => {
-              if (!isRefreshing) {
-                e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.8)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.8)';
-            }}
+            className={`ids-refresh-btn-neon ids-refresh-btn-neon--${
+              idsStatus.status === 'error' ? 'error' : 
+              idsStatus.status === 'warning' ? 'warning' : 
+              'healthy'
+            }`}
           >
-            <RefreshCcw 
-              className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`}
-              style={{ strokeWidth: 2 }}
-            />
-            <span>{isRefreshing ? 'Refreshing…' : 'Refresh Dashboard'}</span>
+            <RotateCw className={`ids-refresh-icon ${isRefreshing ? 'animate-spin-slow' : ''}`} />
+            <span>Refresh</span>
           </button>
         </div>
       </header>

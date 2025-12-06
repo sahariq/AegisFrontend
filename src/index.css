@@ -1034,6 +1034,13 @@ button {
   font-weight: 600;
 }
 
+.sev-critical {
+  background: rgba(220, 38, 38, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(220, 38, 38, 0.9);
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+}
+
 .sev-high {
   background: rgba(239, 68, 68, 0.18);
   color: #fecaca;
@@ -2147,6 +2154,295 @@ button {
   }
 }
 
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 1s linear infinite;
+}
+
+/* Header Right Side - Status & Refresh */
+.ids-header-right-new {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+}
+
+@media (min-width: 768px) {
+  .ids-header-right-new {
+    gap: 16px;
+    font-size: 12px;
+  }
+}
+
+/* Status Pill - Base */
+.ids-status-pill-neon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .ids-status-pill-neon {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+}
+
+/* Status Pill - Error State (Red) */
+.ids-status-pill-neon--error {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fecaca;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
+/* Status Pill - Warning State (Amber) */
+.ids-status-pill-neon--warning {
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+  color: #fde68a;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
+}
+
+/* Status Pill - Healthy State (Green) */
+.ids-status-pill-neon--healthy {
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+  color: #bbf7d0;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
+}
+
+.ids-status-dot-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.ids-status-dot-icon--error {
+  color: #fb7185;
+  filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.6));
+}
+
+.ids-status-dot-icon--warning {
+  color: #fbbf24;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.6));
+}
+
+.ids-status-dot-icon--healthy {
+  color: #4ade80;
+  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.6));
+}
+
+.ids-status-text {
+  color: rgba(203, 213, 225, 0.75);
+}
+
+.ids-status-value {
+  font-weight: 600;
+}
+
+.ids-status-value--error {
+  color: #fda4af;
+}
+
+.ids-status-value--warning {
+  color: #fde047;
+}
+
+.ids-status-value--healthy {
+  color: #86efac;
+}
+
+.ids-status-separator {
+  color: #64748b;
+}
+
+/* Refresh Button - Base */
+.ids-refresh-btn-neon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+
+@media (min-width: 768px) {
+  .ids-refresh-btn-neon {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+}
+
+/* Refresh Button - Error State (Red) */
+.ids-refresh-btn-neon--error {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fecaca;
+}
+
+.ids-refresh-btn-neon--error:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
+}
+
+/* Refresh Button - Warning State (Amber) */
+.ids-refresh-btn-neon--warning {
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+  color: #fde68a;
+}
+
+.ids-refresh-btn-neon--warning:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.15);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.35);
+}
+
+/* Refresh Button - Healthy State (Green) */
+.ids-refresh-btn-neon--healthy {
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+  color: #bbf7d0;
+}
+
+.ids-refresh-btn-neon--healthy:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.35);
+}
+
+.ids-refresh-btn-neon:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.ids-refresh-btn-neon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ids-refresh-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Mock Stream Button */
+.ids-mock-stream-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+
+@media (min-width: 768px) {
+  .ids-mock-stream-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+}
+
+/* Mock Stream - Disabled State */
+.ids-mock-stream-btn--off {
+  border: 1px solid rgba(100, 116, 139, 0.7);
+  background: rgba(15, 23, 42, 0.6);
+  color: #cbd5e1;
+}
+
+.ids-mock-stream-btn--off:hover {
+  border-color: rgba(217, 70, 239, 0.4);
+  background: rgba(217, 70, 239, 0.1);
+  color: #f0abfc;
+}
+
+/* Mock Stream - Enabled State */
+.ids-mock-stream-btn--on {
+  border: 1px solid rgba(217, 70, 239, 0.6);
+  background: rgba(217, 70, 239, 0.2);
+  color: #fae8ff;
+  box-shadow: 0 0 24px rgba(217, 70, 239, 0.7);
+}
+
+.ids-mock-stream-btn--on:hover {
+  background: rgba(217, 70, 239, 0.25);
+  box-shadow: 0 0 28px rgba(217, 70, 239, 0.8);
+}
+
+.ids-mock-stream-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ids-mock-stream-icon--pulsing {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* WebSocket Status Indicator */
+.ws-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.ws-status-indicator--connected {
+  background: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.ws-status-indicator--disconnected {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fb7185;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ws-status-indicator--reconnecting {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+/* New Alert Pulse Animation */
+@keyframes alert-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 211, 238, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+  }
+}
+
+.alert-new-pulse {
+  animation: alert-pulse 1.5s ease-out;
+}
+
 /* Tabs */
 .ids-tab-container {
   display: flex;
@@ -2199,6 +2495,13 @@ button {
 .ids-severity-icon {
   width: 12px;
   height: 12px;
+}
+
+.ids-severity-critical {
+  border-color: rgba(220, 38, 38, 0.9);
+  background: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.3);
 }
 
 .ids-severity-high {
@@ -2361,6 +2664,11 @@ button {
   width: 6px;
   height: 6px;
   border-radius: 999px;
+}
+
+.ids-alert-dot--critical {
+  background: #dc2626;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
 }
 
 .ids-alert-dot--high {
