@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import {
-  Shield,
   RadioTower,
   ChartPie,
   Activity,
@@ -11,9 +10,6 @@ import {
   ShieldAlert,
   Download,
   Search,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle2,
   Info,
   Network,
   Lightbulb,
@@ -28,9 +24,7 @@ import {
   getExplanation
 } from "../api/aegisClient.ts";
 import AlertFrequencyChart from "../components/charts/AlertFrequencyChart.tsx";
-import ThreatsDetectedCard from "../components/charts/ThreatsDetectedCard.tsx";
-import MetricsSummaryCard from "../components/cards/MetricsSummaryCard.tsx";
-import { generateMonthlyThreats } from "../utils/mockDataGenerator.ts";
+import { SeverityBadge } from "../components/common";
 
 // --- Demo data (fallback for when API is unavailable) ----------------------
 
@@ -101,32 +95,6 @@ const tabs = [
   { id: "threat-intel", label: "Threat Intel", icon: ShieldAlert },
 ];
 
-// Severity Pill Component
-const SeverityPill = ({ severity, withIcon = true, className = "" }) => {
-  if (severity === "high") {
-    return (
-      <span className={`ids-severity-pill ids-severity-high ${className}`}>
-        {withIcon && <AlertTriangle className="ids-severity-icon" />}
-        High
-      </span>
-    );
-  }
-  if (severity === "medium") {
-    return (
-      <span className={`ids-severity-pill ids-severity-medium ${className}`}>
-        {withIcon && <AlertCircle className="ids-severity-icon" />}
-        Medium
-      </span>
-    );
-  }
-  return (
-    <span className={`ids-severity-pill ids-severity-low ${className}`}>
-      {withIcon && <CheckCircle2 className="ids-severity-icon" />}
-      Low
-    </span>
-  );
-};
-
 function IDSPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -167,7 +135,6 @@ function IDSPage() {
           setSystemStatus(statusData);
         } catch (apiErr) {
           // Fall back to mock data
-          console.log('API unavailable, using mock data');
           const { generateMetricsOverview } = await import("../utils/mockDataGenerator.ts");
           const mockMetrics = generateMetricsOverview();
           setMetrics(mockMetrics);
@@ -211,7 +178,6 @@ function IDSPage() {
           }
         } catch (apiErr) {
           // Fallback to mock data
-          console.log('API unavailable, using mock alerts');
           const { generateRecentAlerts } = await import("../utils/mockDataGenerator.ts");
           const mockAlerts = generateRecentAlerts(20);
           setAlerts(mockAlerts);
@@ -426,7 +392,7 @@ function IDSPage() {
                   <div className="ids-kpi-value ids-kpi-value--red">
                     {highCount}
                   </div>
-                  <SeverityPill severity="high" className="ids-kpi-pill" />
+                  <SeverityBadge severity="high" className="ids-kpi-pill" />
                   <div className="ids-kpi-meta">
                     Requires immediate triage and response.
                   </div>
@@ -436,7 +402,7 @@ function IDSPage() {
                   <div className="ids-kpi-value ids-kpi-value--amber">
                     {mediumCount}
                   </div>
-                  <SeverityPill severity="medium" className="ids-kpi-pill" />
+                  <SeverityBadge severity="medium" className="ids-kpi-pill" />
                   <div className="ids-kpi-meta">
                     Monitor and correlate with adjacent activity.
                   </div>
@@ -446,7 +412,7 @@ function IDSPage() {
                   <div className="ids-kpi-value ids-kpi-value--emerald">
                     {lowCount}
                   </div>
-                  <SeverityPill severity="low" className="ids-kpi-pill" />
+                  <SeverityBadge severity="low" className="ids-kpi-pill" />
                   <div className="ids-kpi-meta">
                     Benign or informational signals in current window.
                   </div>
@@ -635,7 +601,7 @@ function IDSPage() {
                 </div>
               </div>
 
-              {/* Table */}
+              {/* Desktop Table View */}
               <div className="ids-table-wrapper">
                 <table className="ids-table">
                   <thead>
@@ -681,13 +647,70 @@ function IDSPage() {
                           <td>{label}</td>
                           <td>{score.toFixed(2)}</td>
                           <td>
-                            <SeverityPill severity={alert.severity} />
+                            <SeverityBadge severity={alert.severity} />
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="ids-mobile-cards-wrapper">
+                {filteredAlerts.map((alert) => {
+                  const isSelected = alert.id === selectedAlert?.id;
+                  const srcIp = alert.source_ip || alert.srcIp || "—";
+                  const destIp = alert.destination_ip || alert.destIp || "—";
+                  const label = alert.attack_type || alert.label || "Unknown";
+                  const score = alert.confidence !== undefined ? alert.confidence : (alert.score !== undefined ? alert.score : 0);
+
+                  return (
+                    <div
+                      key={alert.id}
+                      onClick={() => setSelectedAlertId(alert.id)}
+                      className={`ids-alert-card ${isSelected ? "ids-row--selected" : ""}`}
+                    >
+                      <div className="ids-alert-card-header">
+                        <div className="ids-alert-card-id">
+                          <span
+                            className={`ids-alert-dot ids-alert-dot--${alert.severity}`}
+                          />
+                          <span>{alert.id}</span>
+                        </div>
+                        <SeverityBadge severity={alert.severity} />
+                      </div>
+                      <div className="ids-alert-card-body">
+                        <div className="ids-alert-card-field">
+                          <div className="ids-alert-card-label">Label</div>
+                          <div className="ids-alert-card-value">{label}</div>
+                        </div>
+                        <div className="ids-alert-card-field">
+                          <div className="ids-alert-card-label">Score</div>
+                          <div className="ids-alert-card-value">{score.toFixed(2)}</div>
+                        </div>
+                        <div className="ids-alert-card-field">
+                          <div className="ids-alert-card-label">Source IP</div>
+                          <div className="ids-alert-card-value">{srcIp}</div>
+                        </div>
+                        <div className="ids-alert-card-field">
+                          <div className="ids-alert-card-label">Dest IP</div>
+                          <div className="ids-alert-card-value">{destIp}</div>
+                        </div>
+                        <div className="ids-alert-card-field">
+                          <div className="ids-alert-card-label">Protocol</div>
+                          <div className="ids-alert-card-value">{alert.protocol || "TCP"}</div>
+                        </div>
+                        <div className="ids-alert-card-field">
+                          <div className="ids-alert-card-label">Timestamp</div>
+                          <div className="ids-alert-card-value">
+                            {new Date(alert.timestamp).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Frequency chart */}
@@ -718,7 +741,7 @@ function IDSPage() {
                   )}
                 </div>
                 {selectedAlert && (
-                  <SeverityPill severity={selectedAlert.severity} />
+                  <SeverityBadge severity={selectedAlert.severity} />
                 )}
               </div>
               {selectedAlert && (
@@ -1058,7 +1081,7 @@ function IDSPage() {
                       .sort(([, a], [, b]) => b - a)
                       .map(([severity, count]) => (
                         <tr key={severity}>
-                          <td><SeverityPill severity={severity} /></td>
+                          <td><SeverityBadge severity={severity} /></td>
                           <td>{count}</td>
                         </tr>
                       ))

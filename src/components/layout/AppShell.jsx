@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -6,6 +6,8 @@ import {
   ShieldAlert,
   Bot,
   Settings,
+  Menu,
+  X,
 } from "lucide-react";
 import aegisLogo from "../../assets/aegis-logo.png";
 import "../../index.css";
@@ -21,10 +23,54 @@ const NAV_ITEMS = [
 function AppShell({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu on escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape" && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [mobileMenuOpen]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <div className="aegis-shell aegis-shell--collapsed">
-      <aside className="aegis-sidebar">
+      {/* Mobile Menu Toggle Button */}
+      <button
+        className="aegis-mobile-menu-toggle"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile Backdrop */}
+      <div
+        className={`aegis-sidebar-backdrop ${mobileMenuOpen ? "active" : ""}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      <aside className={`aegis-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}>
         <div className="aegis-sidebar-top">
           <div className="aegis-sidebar-logo-wrap">
             <img

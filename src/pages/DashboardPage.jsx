@@ -7,7 +7,6 @@ import {
   Activity,
   Clock3,
   Lightbulb,
-  ChevronDown,
   MessageSquare,
   BrainCircuit,
   Server,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import RecentAlertCard from "../components/alerts/RecentAlertCard.jsx";
 import ThreatsDetectedCard from "../components/charts/ThreatsDetectedCard.tsx";
+import { StatCard, StatusPill } from "../components/common";
 import { getMetricsOverview, fetchAlerts } from "../api/aegisClient.ts";
 import { 
   generateMonthlyThreats, 
@@ -23,23 +23,6 @@ import {
   generateMetricsOverview,
   ThreatSimulator 
 } from "../utils/mockDataGenerator.ts";
-
-function StatCard({ label, value, delta, trend = "neutral", Icon }) {
-  return (
-    <div className="aegis-stat-card">
-      <div className="aegis-stat-meta">
-        <div className="aegis-stat-icon">
-          <Icon size={18} strokeWidth={1.6} />
-        </div>
-        <span className="aegis-stat-label">{label}</span>
-      </div>
-      <div className="aegis-stat-main-row">
-        <span className="aegis-stat-value">{value}</span>
-        <span className={`aegis-stat-chip aegis-stat-chip--${trend}`}>{delta}</span>
-      </div>
-    </div>
-  );
-}
 
 function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
@@ -115,7 +98,6 @@ function DashboardPage() {
           setUseMockData(false);
         } catch (apiError) {
           // If API fails, use mock data
-          console.log('API unavailable, using mock data:', apiError.message);
           setUseMockData(true);
           
           // Generate mock data
@@ -227,19 +209,7 @@ function DashboardPage() {
                 <span className="aegis-stat-value">{modelHealth.f1Score.toFixed(2)}</span>
                 <span style={{ fontSize: '11px', color: '#9ca9cb' }}>F1 Score</span>
               </div>
-              <span 
-                className="aegis-stat-chip" 
-                style={{ 
-                  background: modelHealth.status === 'stable' ? 'rgba(34, 197, 94, 0.15)' : 
-                             modelHealth.status === 'degraded' ? 'rgba(251, 191, 36, 0.15)' : 
-                             'rgba(239, 68, 68, 0.15)',
-                  color: modelHealth.status === 'stable' ? '#4ade80' : 
-                         modelHealth.status === 'degraded' ? '#fbbf24' : 
-                         '#f87171'
-                }}
-              >
-                {modelHealth.status.charAt(0).toUpperCase() + modelHealth.status.slice(1)}
-              </span>
+              <StatusPill status={modelHealth.status} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', color: '#9ca9cb' }}>
@@ -379,19 +349,7 @@ function DashboardPage() {
                 <span className="aegis-stat-value">{riskScore.score}</span>
                 <span style={{ fontSize: '16px', color: '#9ca9cb', fontWeight: 500 }}>/ 100</span>
               </div>
-              <span 
-                className="aegis-stat-chip" 
-                style={{ 
-                  background: riskScore.level === 'low' ? 'rgba(34, 197, 94, 0.15)' : 
-                             riskScore.level === 'moderate' ? 'rgba(251, 191, 36, 0.15)' : 
-                             'rgba(239, 68, 68, 0.15)',
-                  color: riskScore.level === 'low' ? '#4ade80' : 
-                         riskScore.level === 'moderate' ? '#fbbf24' : 
-                         '#f87171'
-                }}
-              >
-                {riskScore.level.charAt(0).toUpperCase() + riskScore.level.slice(1)}
-              </span>
+              <StatusPill status={riskScore.level} />
             </div>
             
             {/* Mini Breakdown */}

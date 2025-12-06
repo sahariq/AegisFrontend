@@ -21,7 +21,6 @@ function MetricsPage() {
           setMetrics(data);
         } catch (apiErr) {
           // Fall back to mock data
-          console.log("API unavailable, using mock metrics");
           const mockData = generateMetricsOverview();
           setMetrics(mockData);
         }

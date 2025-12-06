@@ -1,35 +1,196 @@
-# React + Vite
+# Aegis Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive security dashboard for the Aegis Intrusion Detection System (IDS). Built with React, Vite, and Recharts, featuring a dark SaaS aesthetic optimized for real-time threat monitoring.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🎯 Core Functionality
+- **Real-time Threat Detection**: Live monitoring of 5 SME-critical cyberattacks
+  - SYN Flood
+  - ARP-based MITM
+  - Brute-force login attempts
+  - DNS exfiltration
+  - Application-layer (L7) anomalies
+- **Live Alerts Feed**: Auto-refreshing alert stream with filtering and search
+- **IDS Analytics**: Multi-tab interface with Overview, Live Alerts, Explainability, Analytics, and Threat Intel
+- **Interactive Dashboards**: KPI cards, threat charts, and distribution visualizations
+- **Settings Management**: Comprehensive configuration for alerts, notifications, and integrations
 
-## React Compiler
+### 📱 Responsive Design
+- **Desktop (≥1440px)**: Full-featured table views with detailed columns
+- **Tablet (1024px)**: Optimized 2-column layouts with wrapped controls
+- **Mobile (≤768px)**: Touch-friendly card views replacing tables
+- **Small Mobile (≤480px)**: Compact layouts with optimized spacing
+- **Mobile Menu**: Slide-out sidebar with backdrop overlay and escape key support
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🎨 UI/UX Highlights
+- Dark SaaS aesthetic with neon accents (purple, cyan, emerald)
+- Smooth animations and transitions
+- Responsive severity badges with color coding
+- Interactive charts with hover states
+- Mobile-optimized card views for alerts
+- No horizontal scroll at any breakpoint
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **React 18** - UI framework
+- **Vite** - Build tool with HMR
+- **Recharts** - Data visualization
+- **Lucide React** - Icon library
+- **React Router** - Client-side routing
+- **TypeScript** - Type safety (partial)
+- **CSS3** - Custom styling with media queries
 
-## API Configuration
+## Getting Started
 
-This frontend connects to the Aegis Backend API. You must configure the API URL in a `.env` file.
+### Prerequisites
+- Node.js 16+ and npm
+- Aegis Backend API (optional - falls back to mock data)
 
-1.  Copy `.env.example` to `.env`:
-    ```bash
-    cp .env.example .env
-    ```
-2.  Update `VITE_AEGIS_API_BASE_URL` if your backend is running on a different host/port (default: `http://localhost:8000`).
+### Installation
 
-### Running the Frontend
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-npm install
-npm run dev
+2. **Configure API (Optional)**
+   
+   Copy `.env.example` to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Update `VITE_AEGIS_API_BASE_URL` if your backend is running on a different host/port:
+   ```env
+   VITE_AEGIS_API_BASE_URL=http://localhost:8000
+   ```
+   
+   **Note**: If the API is unavailable, the dashboard automatically falls back to mock data for development.
+
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
+   
+   The application will be available at `http://localhost:5173`
+
+4. **Build for production**
+   ```bash
+   npm run build
+   ```
+
+## Project Structure
+
+```
+aegis-dashboard/
+├── src/
+│   ├── api/              # API client and mock data
+│   ├── assets/           # Images and static assets
+│   ├── components/       # Reusable React components
+│   │   ├── alerts/       # Alert-related components
+│   │   ├── buttons/      # Button components
+│   │   ├── cards/        # Card components
+│   │   ├── charts/       # Chart components (Recharts)
+│   │   ├── feedback/     # Loading and error states
+│   │   ├── form/         # Form inputs and controls
+│   │   └── layout/       # Layout components (AppShell, Sidebar)
+│   ├── pages/            # Page components
+│   │   ├── DashboardPage.jsx      # Main dashboard with KPIs
+│   │   ├── LiveAlertsPage.jsx     # Real-time alerts feed
+│   │   ├── IDSPage.jsx            # IDS analytics (5 tabs)
+│   │   ├── OverviewPage.jsx       # System overview
+│   │   ├── SettingsPage.tsx       # Settings (4 tabs)
+│   │   └── ...
+│   ├── utils/            # Utility functions and mock data generators
+│   ├── App.jsx           # Main app component with routing
+│   ├── index.css         # Global styles and responsive CSS
+│   └── main.jsx          # App entry point
+├── public/               # Static assets
+└── package.json          # Dependencies and scripts
 ```
 
-The application will be available at `http://localhost:5173`.
+## Key Pages
+
+### Dashboard
+- 8 KPI cards (Active Alerts, Total Detections, Response Time, Detection Rate, Model Health, Agent Status, Top Attack Types, Risk Score)
+- Threats Detected line chart
+- Advisory Insights
+- Pentesting Summary
+- Recent Alerts
+
+### Live Alerts
+- Auto-refreshing alerts feed (5s interval)
+- Search and filter by severity/attack type
+- Responsive table (desktop) / card view (mobile)
+- Alert frequency chart
+
+### IDS Page (5 Tabs)
+1. **Overview**: Architecture info, security metrics, distributions
+2. **Live Alerts**: Detailed alert table with selection and details panel
+3. **Explainability**: ML model explanations for detections
+4. **Analytics**: Threat trends and metrics over time
+5. **Threat Intel**: Top IPs and threat intelligence
+
+### Settings (4 Tabs)
+1. **General**: System preferences and display options
+2. **Alerts & Detection**: Sensitivity slider, thresholds, auto-response
+3. **Notifications**: Email, Slack, webhook configurations
+4. **Integrations**: SIEM, ticketing, and external service connections
+
+## Responsive Breakpoints
+
+| Breakpoint | Width | Layout Changes |
+|------------|-------|----------------|
+| Desktop XL | ≥1440px | Full multi-column layouts, wide tables |
+| Desktop | 1200-1439px | Slightly condensed layouts |
+| Tablet | 992-1199px | 2-column grids, wrapped controls |
+| Tablet SM | 768-991px | Single column, stacked elements |
+| Mobile | 481-768px | Card views, full-width buttons, mobile menu |
+| Mobile SM | ≤480px | Compact spacing, smaller fonts |
+
+## Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server with HMR
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run ESLint
+
+### Mock Data
+
+When the backend API is unavailable, the dashboard uses mock data generators located in `src/utils/mockDataGenerator.ts`. This includes:
+- Recent alerts with realistic timestamps
+- Metrics overview with severity counts
+- Monthly threat trends
+- Attack type distributions
+
+### Styling
+
+The project uses vanilla CSS with a custom design system:
+- **Colors**: Dark backgrounds (#020617, #0f172a) with neon accents
+- **Typography**: System fonts with careful hierarchy
+- **Spacing**: Consistent 4px/8px grid
+- **Animations**: Smooth transitions (0.2s ease)
+- **Responsive**: Mobile-first approach with min-width media queries
+
+## Browser Support
+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- Mobile browsers (iOS Safari, Chrome Mobile)
+
+## Contributing
+
+When adding new features:
+1. Follow the existing component structure
+2. Maintain responsive design at all breakpoints
+3. Use the established color palette and spacing
+4. Test with both API and mock data
+5. Ensure no horizontal scroll on mobile
+
+## License
+
+[Your License Here]

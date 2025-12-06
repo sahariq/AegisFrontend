@@ -355,6 +355,7 @@ button {
 .aegis-shell {
   display: flex;
   min-height: 100vh;
+  width: 100%;
   background: radial-gradient(circle at top left, #050b1a, #020617 55%);
   color: #e5edff;
   position: relative;
@@ -366,6 +367,8 @@ button {
   flex: 1;
   padding: 28px 32px 40px;
   overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 100%;
   transition: margin 0.2s ease, width 0.2s ease;
 }
 
@@ -687,10 +690,12 @@ button {
 
 .aegis-page {
   max-width: 1440px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-x: hidden;
 }
 
 /* GLASS TOP HEADER BAR ----------------------------------- */
@@ -2726,4 +2731,1382 @@ button {
   background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 8 L58 14 C59.5 14.5 60.5 15.8 60.5 17.4 V36 C60.5 48.2 52.8 59 41 63 L40 63.4 L39 63 C27.2 59 19.5 48.2 19.5 36 V17.4 C19.5 15.8 20.5 14.5 22 14 L40 8 Z' fill='none' stroke='%2332446e' stroke-width='1.3' opacity='0.45' /%3E%3C/svg%3E");
   background-size: 120px 120px;
   background-position: center;
+}
+
+
+/* ============================================
+   RESPONSIVE MEDIA QUERIES - PHASE 1
+   ============================================ */
+
+/* Small Laptop (1024px - 1439px) */
+@media (max-width: 1439px) {
+  .aegis-main {
+    padding: 24px 28px 36px;
+  }
+
+  .aegis-dash-header {
+    gap: 16px;
+  }
+
+  .aegis-dash-top-row {
+    gap: 14px;
+  }
+}
+
+/* Tablet & Small Laptop (768px - 1199px) */
+@media (max-width: 1199px) {
+  .aegis-main {
+    padding: 20px 24px 32px;
+  }
+
+  .aegis-dash-title {
+    font-size: 26px;
+  }
+
+  .aegis-dash-subtitle {
+    font-size: 13px;
+  }
+
+  .aegis-stat-card {
+    min-height: 120px;
+    padding: 16px;
+  }
+
+  .aegis-stat-value {
+    font-size: 22px;
+  }
+}
+
+/* Tablet (768px - 991px) - Icon-only sidebar */
+@media (max-width: 991px) {
+  .aegis-shell--collapsed .aegis-sidebar {
+    width: 72px;
+  }
+
+  .aegis-shell--collapsed .aegis-nav-label {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+  }
+
+  .aegis-shell--collapsed .aegis-sidebar-search {
+    display: none;
+  }
+
+  .aegis-shell--collapsed .aegis-user-meta {
+    display: none;
+  }
+
+  .aegis-main {
+    padding: 18px 20px 28px;
+  }
+
+  .aegis-dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .aegis-dash-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .aegis-dash-top-row {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .aegis-dash-main-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .aegis-card {
+    padding: 14px;
+  }
+
+  .aegis-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .aegis-table {
+    min-width: 560px;
+  }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+  .aegis-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+  }
+
+  .aegis-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .aegis-shell--collapsed .aegis-sidebar {
+    width: 260px;
+  }
+
+  .aegis-shell--collapsed .aegis-nav-label {
+    opacity: 1;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  .aegis-shell--collapsed .aegis-sidebar-search {
+    display: block;
+  }
+
+  .aegis-shell--collapsed .aegis-user-meta {
+    display: flex;
+  }
+
+  .aegis-main {
+    padding: 16px;
+    width: 100%;
+  }
+
+  .aegis-dash-title {
+    font-size: 22px;
+  }
+
+  .aegis-dash-subtitle {
+    font-size: 12px;
+  }
+
+  .aegis-dash-top-row {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .aegis-stat-card {
+    min-height: 100px;
+    padding: 14px;
+  }
+
+  .aegis-stat-value {
+    font-size: 20px;
+  }
+
+  .aegis-stat-label {
+    font-size: 11px;
+  }
+
+  .aegis-card-header h2 {
+    font-size: 15px;
+  }
+
+  .aegis-card-subtitle {
+    font-size: 11px;
+  }
+
+  .aegis-table {
+    font-size: 12px;
+  }
+
+  .aegis-table th,
+  .aegis-table td {
+    padding: 8px 10px;
+  }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  .aegis-main {
+    padding: 12px;
+  }
+
+  .aegis-dash-title {
+    font-size: 20px;
+  }
+
+  .aegis-dash-top-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .aegis-stat-card {
+    min-height: 90px;
+    padding: 12px;
+  }
+
+  .aegis-stat-value {
+    font-size: 18px;
+  }
+
+  .aegis-dash-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .aegis-env-pill {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  .aegis-card {
+    padding: 12px;
+  }
+
+  .aegis-table {
+    font-size: 11px;
+  }
+
+  .aegis-table th,
+  .aegis-table td {
+    padding: 6px 8px;
+  }
+}
+
+/* Mobile Sidebar Backdrop */
+.aegis-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 768px) {
+  .aegis-sidebar-backdrop.active {
+    display: block;
+  }
+}
+
+/* Mobile Menu Toggle Button */
+.aegis-mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1001;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.aegis-mobile-menu-toggle:hover {
+  background: rgba(59, 130, 246, 0.3);
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .aegis-mobile-menu-toggle {
+    display: flex;
+  }
+}
+
+
+/* IDS Metrics Table Responsive Wrapper */
+.ids-metrics-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ids-metrics-table {
+  width: 100%;
+  min-width: 280px;
+}
+
+.ids-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .ids-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .ids-metrics-table {
+    font-size: 12px;
+  }
+}
+
+
+/* ============================================
+   ADDITIONAL RESPONSIVE IMPROVEMENTS
+   ============================================ */
+
+/* Advisory Card Responsive */
+@media (max-width: 768px) {
+  .aegis-advisory-card {
+    padding: 16px;
+  }
+
+  .aegis-advisory-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .aegis-advisory-title {
+    font-size: 16px;
+  }
+
+  .aegis-advisory-subtitle {
+    font-size: 12px;
+  }
+}
+
+/* Ensure all cards have max-width */
+.aegis-card,
+.aegis-stat-card,
+.aegis-alert-card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Responsive chart containers */
+.aegis-chart-placeholder {
+  min-height: 180px;
+}
+
+@media (max-width: 768px) {
+  .aegis-chart-placeholder {
+    min-height: 150px;
+    padding: 16px;
+  }
+}
+
+/* Ensure buttons don't overflow */
+button,
+.aegis-primary-btn,
+.aegis-secondary-btn {
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+/* Responsive alert cards */
+@media (max-width: 768px) {
+  .aegis-alerts-list {
+    gap: 10px;
+  }
+
+  .aegis-alert-card {
+    padding: 12px;
+  }
+}
+
+/* Responsive user pill in sidebar */
+@media (max-width: 991px) {
+  .aegis-user-pill {
+    padding: 8px;
+  }
+
+  .aegis-user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+}
+
+/* Ensure no horizontal scroll on any container */
+* {
+  box-sizing: border-box;
+}
+
+.aegis-page,
+.aegis-main,
+.aegis-card,
+.aegis-dash-main-grid,
+.aegis-dash-left-col,
+.aegis-dash-right-col {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+
+/* ============================================
+   IDS PAGE RESPONSIVE STYLES
+   ============================================ */
+
+/* IDS Overview Grid Responsive */
+@media (max-width: 1199px) {
+  .ids-overview-grid {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 991px) {
+  .ids-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .ids-overview-left,
+  .ids-overview-right {
+    width: 100%;
+  }
+}
+
+/* IDS Analytics Grid Responsive */
+@media (max-width: 1199px) {
+  .ids-analytics-grid {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 991px) {
+  .ids-analytics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* IDS Metrics Grid */
+.ids-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .ids-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* IDS Architecture Card */
+@media (max-width: 768px) {
+  .ids-arch-card {
+    padding: 16px;
+  }
+
+  .ids-arch-card h2 {
+    font-size: 16px;
+  }
+}
+
+/* IDS Explain Card */
+@media (max-width: 768px) {
+  .ids-explain-example {
+    padding: 16px;
+  }
+}
+
+
+/* ============================================
+   LIVE ALERTS PAGE RESPONSIVE
+   ============================================ */
+
+/* IDS Table Responsive */
+.ids-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.ids-table {
+  min-width: 800px;
+  width: 100%;
+}
+
+@media (max-width: 991px) {
+  .ids-table {
+    min-width: 700px;
+    font-size: 13px;
+  }
+
+  .ids-table th,
+  .ids-table td {
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ids-table {
+    min-width: 600px;
+    font-size: 12px;
+  }
+
+  .ids-table th,
+  .ids-table td {
+    padding: 8px 10px;
+  }
+}
+
+/* Alert Filters Responsive */
+.ids-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .ids-filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ids-filters > * {
+    width: 100%;
+  }
+}
+
+/* Alert Cards Grid */
+.aegis-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .aegis-alerts-list {
+    gap: 10px;
+  }
+}
+
+
+/* ============================================
+   METRICS PAGE RESPONSIVE
+   ============================================ */
+
+/* IDS KPI Grid */
+.ids-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 991px) {
+  .ids-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .ids-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+/* Metrics Cards */
+@media (max-width: 768px) {
+  .ids-kpi-card {
+    padding: 12px;
+  }
+
+  .ids-kpi-value {
+    font-size: 20px;
+  }
+
+  .ids-kpi-label {
+    font-size: 11px;
+  }
+}
+
+
+/* ============================================
+   DETECTION PAGE & FORMS RESPONSIVE
+   ============================================ */
+
+/* Form Elements Responsive */
+.aegis-textarea,
+.aegis-input,
+.aegis-field-label {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .aegis-textarea {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .aegis-field-label {
+    font-size: 13px;
+  }
+
+  form {
+    padding: 12px !important;
+  }
+}
+
+/* Button Groups Responsive */
+.aegis-button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .aegis-button-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .aegis-button-group button {
+    width: 100%;
+  }
+}
+
+/* Detection Result Card */
+@media (max-width: 768px) {
+  .detection-result {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  pre {
+    font-size: 11px;
+    padding: 10px;
+    overflow-x: auto;
+  }
+}
+
+
+/* ============================================
+   FINAL POLISH & EDGE CASES
+   ============================================ */
+
+/* Ensure status pills don't overflow */
+.aegis-status-pill,
+.sev {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Responsive IP addresses and long text */
+@media (max-width: 768px) {
+  .ids-table td {
+    word-break: break-word;
+    max-width: 150px;
+  }
+
+  /* Allow IP addresses to wrap if needed */
+  .ip-address {
+    word-break: break-all;
+  }
+}
+
+/* Ensure modals/dialogs are responsive */
+.aegis-modal,
+.aegis-dialog {
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+@media (max-width: 768px) {
+  .aegis-modal,
+  .aegis-dialog {
+    width: 100%;
+    margin: 10px;
+  }
+}
+
+/* Responsive search bars */
+.aegis-sidebar-search-input,
+.aegis-search-input {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Ensure code blocks don't overflow */
+pre,
+code {
+  max-width: 100%;
+  overflow-x: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+  pre {
+    font-size: 11px;
+    padding: 10px;
+  }
+
+  code {
+    font-size: 11px;
+  }
+}
+
+/* Responsive pagination */
+.pagination {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .pagination {
+    gap: 4px;
+  }
+
+  .pagination button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* Ensure images are responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive logo */
+.aegis-sidebar-logo {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fix any remaining overflow issues */
+@media (max-width: 768px) {
+  /* Reduce all large fixed widths */
+  [style*="width: 1200px"],
+  [style*="width: 1000px"],
+  [style*="width: 800px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure flex items don't overflow */
+  .flex-item {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE IMPROVEMENTS FOR IDS PAGES (LiveAlerts & IDS)
+   ============================================================ */
+
+/* Mobile Card View for Alerts (alternative to table on mobile) */
+.ids-mobile-cards-wrapper {
+  display: none; /* Hidden by default, shown on mobile */
+  padding: 0 20px 20px;
+}
+
+.ids-alert-card {
+  display: block;
+  padding: 16px;
+  background: radial-gradient(circle at top left, #0f172a, #020617);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ids-alert-card:hover {
+  border-color: rgba(129, 140, 248, 0.4);
+  background: radial-gradient(circle at top left, #111827, #020617);
+}
+
+.ids-alert-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.ids-alert-card-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.ids-alert-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  font-size: 13px;
+}
+
+.ids-alert-card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ids-alert-card-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ids-alert-card-value {
+  color: #e2e8f0;
+}
+
+/* Responsive Severity Badges */
+.ids-severity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.ids-severity-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Header Responsive Wrapper */
+.ids-header-new {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ids-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Filters Row Responsive */
+.ids-filters-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Live Alerts specific */
+.ids-live-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ids-live-kpis {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ids-inline-kpi {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.ids-inline-kpi-label {
+  color: #94a3b8;
+}
+
+.ids-inline-kpi-value {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.ids-inline-kpi-delta {
+  color: #10b981;
+  font-size: 12px;
+}
+
+.ids-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ids-download-btn:hover {
+  border-color: rgba(168, 85, 247, 0.7);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+/* Live Status */
+.ids-live-status {
+  font-size: 13px;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ids-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.ids-live-dot--on {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.ids-live-dot--off {
+  background: #64748b;
+}
+
+.ids-live-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.ids-toggle {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ids-toggle--on {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.ids-toggle--off {
+  background: #334155;
+}
+
+.ids-toggle-knob {
+  position: absolute;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: white;
+  transition: left 0.2s ease;
+}
+
+.ids-toggle--on .ids-toggle-knob {
+  left: 22px;
+}
+
+.ids-toggle--off .ids-toggle-knob {
+  left: 2px;
+}
+
+/* Tab Container */
+.ids-tab-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.ids-tab-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: #020924;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #cbd5e1;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ids-tab-new:hover {
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.ids-tab-new--active {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  border-color: transparent;
+  color: white;
+}
+
+.ids-tab-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Overview Grid */
+.ids-overview-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+.ids-overview-left,
+.ids-overview-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* KPI Grid */
+.ids-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.ids-kpi-card {
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.ids-kpi-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.ids-kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 8px;
+}
+
+.ids-kpi-pill {
+  margin-bottom: 8px;
+}
+
+.ids-kpi-meta {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Bar Charts */
+.ids-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.ids-bar-row > span:first-child {
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.ids-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ids-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.ids-bar-fill--purple {
+  background: linear-gradient(90deg, #a855f7, #9333ea);
+}
+
+.ids-bar-fill--amber {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.ids-bar-fill--red {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.ids-bar-fill--green {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.ids-bar-value {
+  min-width: 40px;
+  text-align: right;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Status Dot with Pulse */
+.ids-status-dot--pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS FOR IDS PAGES
+   ============================================================ */
+
+/* Tablet (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .ids-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ids-live-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ids-header-new {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ids-header-right {
+    justify-content: flex-start;
+  }
+
+  .ids-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ids-table-controls {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .ids-search-wrapper {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .ids-live-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ids-live-kpis {
+    justify-content: flex-start;
+  }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Header stacking */
+  .aegis-dash-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .aegis-dash-header-actions {
+    justify-content: flex-start;
+  }
+
+  .ids-header-new {
+    gap: 12px;
+  }
+
+  .ids-header-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .ids-status-pill,
+  .ids-pentest-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Filters row wrapping */
+  .ids-filters-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .ids-table-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .ids-search-wrapper {
+    width: 100%;
+  }
+
+  .ids-select {
+    width: 100%;
+  }
+
+  /* Hide table, show card view on mobile */
+  .ids-table-wrapper {
+    display: none;
+  }
+
+  .ids-mobile-cards-wrapper {
+    display: block;
+  }
+
+  /* Severity badges smaller on mobile */
+  .ids-severity-pill {
+    padding: 3px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .ids-severity-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* KPI Grid single column */
+  .ids-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ids-kpi-card {
+    padding: 14px;
+  }
+
+  .ids-kpi-value {
+    font-size: 24px;
+  }
+
+  /* Live toolbar stacking */
+  .ids-live-left {
+    gap: 10px;
+  }
+
+  .ids-live-kpis {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .ids-inline-kpi {
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 8px;
+  }
+
+  .ids-download-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Tab container scrollable */
+  .ids-tab-container {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .ids-tab-new {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  /* Details grid single column */
+  .ids-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Bar charts responsive */
+  .ids-bar-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .ids-bar-row > span:first-child {
+    min-width: auto;
+  }
+
+  .ids-bar-value {
+    text-align: left;
+  }
+
+  /* Alert card body single column on very small screens */
+  .ids-alert-card-body {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  .ids-alert-card {
+    padding: 12px;
+  }
+
+  .ids-alert-card-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ids-kpi-value {
+    font-size: 20px;
+  }
+
+  .ids-tab-new {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .ids-tab-icon {
+    width: 14px;
+    height: 14px;
+  }
 }

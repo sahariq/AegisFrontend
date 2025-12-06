@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../index.css";
 import { Activity, Gauge, Server, AlertTriangle, Heart, Shield, Target, TrendingUp } from "lucide-react";
 import { getMetricsOverview, getSystemStatus } from "../api/aegisClient.ts";
+import { StatCard, StatusPill, ErrorAlert } from "../components/common";
 
 function OverviewPage() {
   const [metrics, setMetrics] = useState(null);
@@ -83,136 +84,54 @@ function OverviewPage() {
       )}
 
       <section className="aegis-dash-top-row">
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <Activity size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Total Detections</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value">
-              {loading ? "…" : totalDetections}
-            </span>
-          </div>
-        </div>
-
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <AlertTriangle size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Total Alerts</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value">
-              {loading ? "…" : totalAlerts}
-            </span>
-          </div>
-        </div>
-
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <Gauge size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Detection Rate</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value">
-              {loading ? "…" : detectionRate}
-            </span>
-          </div>
-        </div>
-
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <Server size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Loaded Models</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value">
-              {loading
-                ? "…"
-                : systemStatus?.loaded_models
-                  ? systemStatus.loaded_models.length
-                  : 0}
-            </span>
-          </div>
-        </div>
+        <StatCard
+          label="Total Detections"
+          value={loading ? "…" : totalDetections}
+          Icon={Activity}
+        />
+        <StatCard
+          label="Total Alerts"
+          value={loading ? "…" : totalAlerts}
+          Icon={AlertTriangle}
+        />
+        <StatCard
+          label="Detection Rate"
+          value={loading ? "…" : detectionRate}
+          Icon={Gauge}
+        />
+        <StatCard
+          label="Loaded Models"
+          value={loading ? "…" : systemStatus?.loaded_models ? systemStatus.loaded_models.length : 0}
+          Icon={Server}
+        />
       </section>
 
       {/* Second Row of KPI Cards */}
       <section className="aegis-dash-top-row" style={{ marginTop: '16px' }}>
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <Heart size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Model Health</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value">
-              {loading ? "…" : "98.5%"}
-            </span>
-            <span className="aegis-stat-chip" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}>
-              Healthy
-            </span>
-          </div>
-        </div>
-
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <Shield size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Agent Status</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value">
-              {loading ? "…" : "Active"}
-            </span>
-            <span className="aegis-stat-chip" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}>
-              Online
-            </span>
-          </div>
-        </div>
-
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <Target size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Top Attack Type</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value" style={{ fontSize: '18px' }}>
-              {loading ? "…" : "SYN Flood"}
-            </span>
-            <span className="aegis-stat-chip" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}>
-              32%
-            </span>
-          </div>
-        </div>
-
-        <div className="aegis-stat-card">
-          <div className="aegis-stat-meta">
-            <div className="aegis-stat-icon">
-              <TrendingUp size={18} strokeWidth={1.6} />
-            </div>
-            <span className="aegis-stat-label">Overall Risk Score</span>
-          </div>
-          <div className="aegis-stat-main-row">
-            <span className="aegis-stat-value">
-              {loading ? "…" : "6.2"}
-            </span>
-            <span className="aegis-stat-chip" style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24' }}>
-              Medium
-            </span>
-          </div>
-        </div>
+        <StatCard
+          label="Model Health"
+          value={loading ? "…" : "98.5%"}
+          delta="Healthy"
+          Icon={Heart}
+        />
+        <StatCard
+          label="Agent Status"
+          value={loading ? "…" : "Active"}
+          delta="Online"
+          Icon={Shield}
+        />
+        <StatCard
+          label="Top Attack Type"
+          value={loading ? "…" : "SYN Flood"}
+          delta="32%"
+          Icon={Target}
+        />
+        <StatCard
+          label="Overall Risk Score"
+          value={loading ? "…" : "6.2"}
+          delta="Medium"
+          Icon={TrendingUp}
+        />
       </section>
 
       <section className="aegis-dash-main-grid">

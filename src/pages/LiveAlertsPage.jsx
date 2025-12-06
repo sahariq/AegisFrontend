@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import "../index.css";
 import { AlertTriangle, RefreshCcw, Search } from "lucide-react";
 import { fetchAlerts } from "../api/aegisClient.ts";
-import { getAlerts as getMockAlerts } from "../api/mock.js";
 import AlertFrequencyChart from "../components/charts/AlertFrequencyChart.tsx";
+import { ErrorAlert } from "../components/common";
 
 function LiveAlertsPage() {
   const [alerts, setAlerts] = useState([]);
@@ -38,7 +38,6 @@ function LiveAlertsPage() {
         setAlerts(response.alerts);
       } catch (apiErr) {
         // Fall back to mock data
-        console.log("API unavailable, using mock data");
         const { generateRecentAlerts } = await import("../utils/mockDataGenerator.ts");
         const mockAlerts = generateRecentAlerts(25);
         setAlerts(mockAlerts);
@@ -139,23 +138,7 @@ function LiveAlertsPage() {
         </div>
       </header>
 
-      {error && (
-        <div
-          style={{
-            padding: "0.75rem 1rem",
-            background: "#111827",
-            color: "#fbbf24",
-            borderRadius: "0.75rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <AlertTriangle size={16} />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <ErrorAlert message={error} />}
 
       <div className="aegis-card">
         <div className="aegis-card-header">
@@ -203,6 +186,7 @@ function LiveAlertsPage() {
           </div>
         </div>
 
+        {/* Desktop Table View */}
         <div className="ids-table-wrapper">
           <table className="ids-table">
             <thead>
@@ -242,6 +226,60 @@ function LiveAlertsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="ids-mobile-cards-wrapper">
+          {loading ? (
+            <div className="ids-alert-card">
+              <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                Loading alerts…
+              </div>
+            </div>
+          ) : filteredAlerts.length === 0 ? (
+            <div className="ids-alert-card">
+              <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                No alerts to display.
+              </div>
+            </div>
+          ) : (
+            filteredAlerts.map((alert) => (
+              <div key={alert.id} className="ids-alert-card">
+                <div className="ids-alert-card-header">
+                  <div className="ids-alert-card-id">
+                    <span
+                      className={`ids-alert-dot ids-alert-dot--${alert.severity}`}
+                    />
+                    <span>{alert.id}</span>
+                  </div>
+                  <span
+                    className={`ids-severity-pill ids-severity-${alert.severity}`}
+                  >
+                    {alert.severity === "high" && <AlertTriangle className="ids-severity-icon" />}
+                    {alert.severity === "medium" && <AlertTriangle className="ids-severity-icon" />}
+                    {alert.severity === "low" && <AlertTriangle className="ids-severity-icon" />}
+                    <span className="ids-capitalize">{alert.severity}</span>
+                  </span>
+                </div>
+                <div className="ids-alert-card-body">
+                  <div className="ids-alert-card-field">
+                    <div className="ids-alert-card-label">Type</div>
+                    <div className="ids-alert-card-value">
+                      {alert.attack_type || "Unknown"}
+                    </div>
+                  </div>
+                  <div className="ids-alert-card-field">
+                    <div className="ids-alert-card-label">Timestamp</div>
+                    <div className="ids-alert-card-value">
+                      {alert.timestamp
+                        ? new Date(alert.timestamp).toLocaleString()
+                        : "—"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
