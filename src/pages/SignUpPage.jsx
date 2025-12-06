@@ -30,6 +30,7 @@ function SignUpPage() {
     accepted: false,
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -49,29 +50,38 @@ function SignUpPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    // Clear error when user starts typing
+    // Clear error and success when user starts typing
     if (error) setError("");
+    if (success) setSuccess("");
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
       const result = await authService.register(form.email, form.password);
       
       if (result.success) {
-        // Registration successful, redirect to dashboard
-        navigate("/dashboard");
+        // Registration successful, show success message and redirect to login
+        setSuccess("Account created successfully! Redirecting to login...");
+        // Clear the token since we want them to login manually
+        authService.logout();
+        // Redirect to login after 1.5 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
       } else {
-        // Registration failed, show error
-        setError(result.error || "Registration failed. Please try again.");
+        // Registration failed, show backend error message
+        setError(result.error);
+        setLoading(false);
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      // Unexpected error
+      setError("Unable to reach the server. Please try again.");
       console.error("Registration error:", err);
-    } finally {
       setLoading(false);
     }
   }
@@ -113,6 +123,19 @@ function SignUpPage() {
             fontSize: "14px"
           }}>
             {error}
+          </div>
+        )}
+        {success && (
+          <div style={{
+            padding: "12px",
+            marginBottom: "16px",
+            backgroundColor: "rgba(34, 197, 94, 0.1)",
+            border: "1px solid rgba(34, 197, 94, 0.3)",
+            borderRadius: "8px",
+            color: "#22c55e",
+            fontSize: "14px"
+          }}>
+            {success}
           </div>
         )}
         <FormField label="Name">

@@ -1,38 +1,48 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "../index.css";
-import { Activity, Gauge, Server, AlertTriangle, Heart, Shield, Target, TrendingUp } from "lucide-react";
-import { getMetricsOverview, getSystemStatus } from "../api/aegisClient.ts";
-import { StatCard, StatusPill, ErrorAlert } from "../components/common";
+import { Activity, Gauge, Server, AlertTriangle, Heart, Shield, Target, TrendingUp, RefreshCcw } from "lucide-react";
+import { getMetricsOverview, getSystemStatus, checkHealth } from "../api/aegisClient.ts";
+import { StatCard } from "../components/common";
 
 function OverviewPage() {
   const [metrics, setMetrics] = useState(null);
   const [systemStatus, setSystemStatus] = useState(null);
+  const [healthStatus, setHealthStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadOverview = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [metricsData, systemStatusData, healthData] = await Promise.all([
+        getMetricsOverview(),
+        getSystemStatus(),
+        checkHealth().catch(() => null), // Don't fail if health check fails
+      ]);
+
+      setMetrics(metricsData);
+      setSystemStatus(systemStatusData);
+      setHealthStatus(healthData);
+    } catch (err) {
+      setError(err.message || "Failed to load overview data");
+      console.error("Failed to load overview data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function loadOverview() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const [metricsData, systemStatusData] = await Promise.all([
-          getMetricsOverview(),
-          getSystemStatus(),
-        ]);
-
-        setMetrics(metricsData);
-        setSystemStatus(systemStatusData);
-      } catch (err) {
-        setError(err.message || "Failed to load overview data");
-        console.error("Failed to load overview data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadOverview();
-  }, []);
+  }, [loadOverview]);
+
+  const handleDashboardRefresh = async () => {
+    setIsRefreshing(true);
+    await loadOverview();
+    setIsRefreshing(false);
+  };
 
   const totalDetections = metrics?.total_detections ?? 0;
   const totalAlerts = metrics?.total_alerts ?? 0;
@@ -40,6 +50,26 @@ function OverviewPage() {
     metrics?.detection_rate != null
       ? `${(metrics.detection_rate * 100).toFixed(1)}%`
       : "N/A";
+
+  // Determine IDS status
+  const getIDSStatus = () => {
+    if (loading && !healthStatus) {
+      return { status: 'loading', label: 'Checking...', color: 'bg-slate-500/15 text-slate-300' };
+    }
+    if (error || !healthStatus) {
+      return { status: 'error', label: 'Error', color: 'bg-rose-500/15 text-rose-300' };
+    }
+    if (healthStatus.status === 'healthy' || healthStatus.status === 'ok') {
+      return { status: 'healthy', label: 'Healthy', color: 'bg-emerald-500/15 text-emerald-300' };
+    }
+    if (healthStatus.status === 'degraded' || healthStatus.status === 'warning') {
+      return { status: 'warning', label: 'Degraded', color: 'bg-amber-500/15 text-amber-300' };
+    }
+    return { status: 'error', label: 'Error', color: 'bg-rose-500/15 text-rose-300' };
+  };
+
+  const idsStatus = getIDSStatus();
+  const environmentLabel = systemStatus?.environment || 'Demo (Mock Data)';
 
   return (
     <div className="aegis-page">
@@ -50,36 +80,68 @@ function OverviewPage() {
             High-level summary of IDS metrics and system health.
           </p>
         </div>
-        <div className="aegis-dash-header-actions">
-          <div className="aegis-env-pill">
-            <span className="aegis-env-dot" />
-            <span>
-              Environment:{" "}
-              {systemStatus?.environment
-                ? systemStatus.environment
-                : "Unknown"}{" "}
-              ·{" "}
-              {loading
-                ? "Loading..."
-                : error
-                  ? "Error"
-                  : "System status fetched"}
-            </span>
-          </div>
+        <div className="aegis-dash-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Environment pill */}
+          <span 
+            className="rounded-full px-3 py-1 text-xs font-medium"
+            style={{
+              backgroundColor: 'rgba(30, 41, 59, 0.8)',
+              color: 'rgb(203, 213, 225)',
+              border: '1px solid rgba(148, 163, 184, 0.2)'
+            }}
+          >
+            Environment: {environmentLabel}
+          </span>
+
+          {/* IDS status pill */}
+          <span 
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${idsStatus.color}`}
+          >
+            IDS Status: {idsStatus.label}
+          </span>
+
+          {/* Refresh button */}
+          <button
+            type="button"
+            onClick={handleDashboardRefresh}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60"
+            style={{
+              borderColor: 'rgba(148, 163, 184, 0.3)',
+              backgroundColor: 'rgba(15, 23, 42, 0.8)',
+              color: 'rgb(203, 213, 225)',
+            }}
+            onMouseEnter={(e) => {
+              if (!isRefreshing) {
+                e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.8)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.8)';
+            }}
+          >
+            <RefreshCcw 
+              className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`}
+              style={{ strokeWidth: 2 }}
+            />
+            <span>{isRefreshing ? 'Refreshing…' : 'Refresh Dashboard'}</span>
+          </button>
         </div>
       </header>
 
       {error && (
         <div
           style={{
-            padding: "1rem",
-            background: "#fee",
-            color: "#c00",
-            borderRadius: "8px",
-            margin: "1rem 0",
+            padding: '0.75rem 1rem',
+            background: 'rgba(239, 68, 68, 0.1)',
+            color: '#ef4444',
+            borderRadius: '8px',
+            margin: '1rem 0',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            fontSize: '0.875rem'
           }}
         >
-          {error}
+          <strong>Error:</strong> {error}. Unable to fetch IDS health. Check backend connectivity.
         </div>
       )}
 

@@ -27,7 +27,11 @@ class AuthService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        // Return the backend error message
+        return { 
+          success: false, 
+          error: data.message || 'Registration failed. Please try again.'
+        };
       }
 
       // Store token and user info
@@ -38,7 +42,11 @@ class AuthService {
 
       return { success: true, user: data.user };
     } catch (error) {
-      return { success: false, error: error.message };
+      // Network error or other unexpected error
+      return { 
+        success: false, 
+        error: 'Unable to reach the server. Please try again.'
+      };
     }
   }
 
@@ -58,7 +66,11 @@ class AuthService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        // Return the backend error message
+        return { 
+          success: false, 
+          error: data.message || 'Login failed. Please try again.'
+        };
       }
 
       // Store token and user info
@@ -69,7 +81,11 @@ class AuthService {
 
       return { success: true, user: data.user };
     } catch (error) {
-      return { success: false, error: error.message };
+      // Network error or other unexpected error
+      return { 
+        success: false, 
+        error: 'Unable to reach the server. Please try again.'
+      };
     }
   }
 

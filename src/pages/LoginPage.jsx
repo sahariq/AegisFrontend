@@ -38,11 +38,12 @@ function LoginPage() {
         // Login successful, redirect to dashboard
         navigate("/dashboard");
       } else {
-        // Login failed, show error
-        setError(result.error || "Login failed. Please try again.");
+        // Login failed, show backend error message
+        setError(result.error);
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      // Unexpected error
+      setError("Unable to reach the server. Please try again.");
       console.error("Login error:", err);
     } finally {
       setLoading(false);

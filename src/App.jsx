@@ -8,7 +8,6 @@ import IDSPage from "./pages/IDSPage.jsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
 import NotFoundPage from "./pages/NotFoundPage.tsx";
 import AppShell from "./components/layout/AppShell.jsx";
-import HealthCheck from "./components/HealthCheck.tsx";
 
 function useCursorGlow() {
   useEffect(() => {
@@ -92,7 +91,6 @@ function App() {
 
   return (
     <>
-      <HealthCheck />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
